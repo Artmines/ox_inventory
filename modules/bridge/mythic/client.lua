@@ -52,12 +52,36 @@ local ClientInventory = {
         GetData = function(self)
             return exports['ox_inventory']:Items() or {}
         end,
+
+        GetCount = function(self, item)
+            return exports['ox_inventory']:Search('count', item) or 0
+        end,
+
+        Has = function(self, item, count)
+            return self:GetCount(item) >= (count or 1)
+        end,
+    },
+
+    Search = {
+        Character = function(self, serverId)
+            exports['ox_inventory']:openInventory('player', serverId)
+        end,
     },
 }
 
 -- register with mythic-base so every resource that calls FetchComponent('Inventory') gets our shim
 AddEventHandler('Proxy:Shared:RegisterReady', function()
     exports['mythic-base']:RegisterComponent('Inventory', ClientInventory)
+    local Callbacks = exports['mythic-base']:FetchComponent('Callbacks')
+    local Progress = exports['mythic-base']:FetchComponent('Progress')
+
+    if Callbacks and Progress then
+        Callbacks:RegisterClientCallback('Inventory:UseItem:Progress', function(data, cb)
+            Progress:Start(data.pbConfig, function(success)
+                cb(success ~= false)
+            end)
+        end)
+    end
 end)
 
 -- force close when logging out
@@ -134,18 +158,6 @@ RegisterNetEvent('Inventory:CloseUI', function()
     exports['ox_inventory']:closeInventory()
 end)
 
--- TODO: this is the mythic item-use progress bar callback
--- server sends this before firing UseItem, client is supposed to run the animation
--- and reply success/cancelled. currently we just say success immediately so items dont hang
--- FIXIT: read pbConfig and trigger ox progress bar (lib.progressBar or similar), then reply properly
-local ItemUseCallbacks = {}
-RegisterNetEvent('Inventory:ItemUse', function(data, cb)
-    -- data has pbConfig, item info etc
-    -- mythic resources register callbacks with Inventory.ItemUse:Register(itemName, cb)
-    -- for now just instantly ack so the item doesnt get stuck waiting
-    if cb then cb(true) end
-end)
-
 -- item added/removed notifications
 RegisterNetEvent('Inventory:Client:Changed', function(data)
     if data.added then
@@ -202,4 +214,8 @@ AddStateBagChangeHandler('isDead', ('player:%s'):format(cache.serverId), functio
         exports['ox_inventory']:closeInventory()
         TriggerEvent('ox_inventory:disarm', true)
     end
+end)
+
+AddStateBagChangeHandler('doingAction', ('player:%s'):format(cache.serverId), function(_, _, value)
+    LocalPlayer.state:set('invBusy', value or false, false)
 end)

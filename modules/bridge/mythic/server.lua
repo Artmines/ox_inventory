@@ -8,35 +8,57 @@
 local Inventory = require 'modules.inventory.server'
 local Items     = require 'modules.items.server'
 
--- converts a SID to a live source, returns nil if theyre not online
-local function sidToSource(sid)
-    local player = exports['mythic-base']:FetchComponent('Fetch'):SID(sid)
+local function toSource(sid)
+    local player = exports['mythic-base']:FetchComponent('Fetch'):SID(tonumber(sid))
     if not player then return nil end
     return player:GetData('Source')
 end
 
+local function toTarget(owner, invType)
+    invType = invType or 1
+    if invType == 1 then
+        return type(owner) == 'number' and toSource(owner) or owner
+    elseif invType == 4 then
+        return (owner:sub(1, 6) ~= 'trunk-') and 'trunk-' ..owner or owner
+    elseif invType == 5 then
+        return (owner:sub(1 , 6) ~= 'glove-') and 'glove-' ..owner or owner
+    end
+    return owner
+end
+
+local function toSlot(slot, owner, invType)
+    if not slot then return nil end
+    local meta = slot.metadata or {}
+    return {
+        id = { owner = tostring(owner or ''), slot = slot.slot},
+        Owner = tostring(owner or ''),
+        invType = invType or 1,
+        Name = slot.name,
+        Label = slot.label,
+        Slot = slot.slot,
+        Count = slot.count,
+        Quality = meta.quality or 100,
+        durability = meta.durability or 100,
+        CreateDate = meta.CreateDate or os.time(),
+        MetaData = meta,
+    }
+end
+
 -- ox calls this after setPlayerInventory to build the player data table stored on inv.player
--- player here is the PLAIN TABLE we build in the Characters:Spawning middleware below
--- (not a mythic player object - dont call :GetData on it here)
+
 function server.setPlayerData(player)
     if not player.groups then
-        print('^3[mythic-ox-bridge] setPlayerData: no groups for ' .. tostring(player.name) .. '^0')
+        print('^1[mythic-ox-bridge] setPlayerData no groups for' .. tostring(player.name) .. '^0')
     end
     return {
-        source      = player.source,
-        name        = player.name,
-        groups      = player.groups or {},
-        sex         = player.sex or 0,
+        source = player.source,
+        name = player.name,
+        groups = player.groups or {},
+        sex = player.sex or 0,
         dateofbirth = player.dateofbirth or '',
     }
 end
 
--- NOTE: we do NOT define server.setPlayerInventory here
--- ox's server.lua defines it after the bridge loads and it handles DB load + inventory creation
--- we just call it from our Characters:Spawning middleware with a properly formatted table
-
--- keeps mythic-finance cash in sync with the money item count
--- ox calls this after item add/remove/buy operations, inv.player.source is set by setPlayerData above
 function server.syncInventory(inv)
     if not inv?.player then return end
     local player = exports['mythic-base']:FetchComponent('Fetch'):Source(inv.player.source)
@@ -46,17 +68,13 @@ function server.syncInventory(inv)
     char:SetData('Cash', Inventory.GetItemCount(inv, 'money') or 0)
 end
 
--- group can be a string or a table of { jobname = mingrade } or { jobname = {validgrades} }
--- overrides generic bridge version to add inv?.player nil check
 function server.hasGroup(inv, group)
     if not inv?.player then return end
-
     if type(group) == 'table' then
         for name, requiredRank in pairs(group) do
             local groupRank = inv.player.groups[name]
             if groupRank then
                 if type(requiredRank) == 'table' then
-                    -- array of valid grade levels e.g. {1,2,3}
                     if lib.table.contains(requiredRank, groupRank) then
                         return name, groupRank
                     end
@@ -92,106 +110,132 @@ local ItemCallbacks = {}
 
 Inventory.Items = {
     RegisterUse = function(self, itemName, id, cb)
-        if not ItemCallbacks[itemName] then
-            ItemCallbacks[itemName] = {}
-        end
+        ItemCallbacks[itemName] = ItemCallbacks[itemName] or {}
         ItemCallbacks[itemName][id] = cb
     end,
 
-    -- used EVERYWHERE (150+ calls), removes a specific slot
-    -- owner = SID for players, stash/container ID for everything else
-    RemoveSlot = function(self, owner, name, count, slot, invType)
-        invType = invType or 1
-        count   = count or 1
-        if invType == 1 then
-            local source = sidToSource(owner)
-            if not source then return false end
-            return exports['ox_inventory']:RemoveItem(source, name, count, nil, slot)
-        end
-        return exports['ox_inventory']:RemoveItem(owner, name, count, nil, slot)
+    GetData = function (self, name)
+       return Items(name) 
     end,
 
-    -- removes by slot object reference, robbery and police use this a lot
-    -- slot is the mythic slot object with .Owner .Name .Slot .invType fields
-    RemoveId = function(self, owner, invType, slot)
-        invType = invType or 1
-        local itemName = slot.Name or slot.name
-        local slotNum  = slot.Slot or slot.slot
-        if invType == 1 then
-            local source = sidToSource(owner)
-            if not source then return false end
-            return exports['ox_inventory']:RemoveItem(source, itemName, 1, nil, slotNum)
-        end
-        return exports['ox_inventory']:RemoveItem(owner, itemName, 1, nil, slotNum)
+    GetCount = function(self, owner, invType, itemName)
+        local target = toTarget(owner, invType)
+        if not target then return 0 end
+        return Inventory.GetItemCount(Inventory(target), itemName) or 0
     end,
 
-    -- plain remove by item name and count, no slot targeting
-    Remove = function(self, owner, invType, item, count)
-        invType = invType or 1
-        count   = count or 1
-        if invType == 1 then
-            local source = sidToSource(owner)
-            if not source then return false end
-            return exports['ox_inventory']:RemoveItem(source, item, count)
-        end
-        return exports['ox_inventory']:RemoveItem(owner, item, count)
+    GetFirst = function(self, owner, invType, itemName)
+        local target = toTarget(owner, invType)
+        if not target then return nil end
+        local slot = Inventory.GetSlotWithItem(Inventory(target), itemName)
+        return toSlot(slot, owner, invType)
     end,
 
-    -- nukes every stack of an item, robbery uses this to clear access codes etc
-    RemoveAll = function(self, owner, invType, itemName)
-        invType = invType or 1
-        if invType == 1 then
-            local source = sidToSource(owner)
-            if not source then return false end
-            local count = exports['ox_inventory']:Search('count', itemName, source) or 0
-            if count > 0 then return exports['ox_inventory']:RemoveItem(source, itemName, count) end
-            return true
+    GetAll = function(self, owner, invType, itemName, slotNum)
+        local target = toTarget(owner, invType)
+        if not target then return {} end
+        local inv = Inventory(target)
+        if not inv then return {} end
+        local result = {}
+        for _, slot in pairs(inv.items) do
+            if slot.name == itemName then
+                result[#result + 1] = toSlot(slot, owner, invType) 
+            end
         end
-        local count = exports['ox_inventory']:Search('count', itemName, owner) or 0
-        if count > 0 then return exports['ox_inventory']:RemoveItem(owner, itemName, count) end
-        return true
+        return result
     end,
 
-    -- removes a list of items in one call, weed and drugs use this for multi-ingredient recipes
-    -- items = {{ name = 'thing', count = 1 }, ...}
-    RemoveList = function(self, owner, invType, items)
-        for _, v in ipairs(items) do
-            Inventory.Items:Remove(owner, invType, v.name, v.count or 1)
-        end
+    GetDurability = function(self, owner, invType, itemName, slotNum)
+        local target = toTarget(owner, invType)
+        if not target then return 0 end
+        local slot = Inventory.GetSlot(Inventory(target), slotNum)
+        if not slot then return 0 end
+        return math.max(0, math.min(100, (slot.metadata or {}).durability or 100))
     end,
 
-    -- police handcuffs calls this on Items not on Inventory directly
+    Broken = function(self, owner, invType, itemName, slotNum)
+        return self:GetDurability (owner, invType, itemName, slotNum) <= 0
+    end,
+
+    Has = function(self, owner, invType, itemName, count)
+        return self:GetCount(owner, invType, itemName)>= (count or 1)
+    end,
+
     HasAnyItems = function(self, source, items)
         for _, v in ipairs(items) do
             local key = v.item or v.name
-            if (exports['ox_inventory']:Search('count', key, source) or 0) >= (v.count or 1) then
+            if (Inventory.GetItemCount(Inventory(source), key) or 0) >= (v.count or 1) then
                 return true
             end
         end
         return false
     end,
-
-    -- crafting uses this for ingredient checks: Items:Has(source, itemName, count)
-    -- same as HasItem basically, just on the Items sub-table instead of Inventory
-    Has = function(self, source, itemName, count)
-        return (exports['ox_inventory']:Search('count', itemName, source) or 0) >= (count or 1)
+    
+    -- used EVERYWHERE (150+ calls), removes a specific slot
+    -- owner = SID for players, stash/container ID for everything else
+    RemoveSlot = function(self, owner, name, count, slotNum, invType)
+        local target = toTarget(owner, invType)
+        if not target then return false end
+        return Inventory.RemoveItem(Inventory(target), name, count or 1, nil, slotNum)
     end,
+
+    -- removes by slot object reference, robbery and police use this a lot
+    -- slot is the mythic slot object with .Owner .Name .Slot .invType fields
+    RemoveId = function(self, owner, invType, slot)
+        local target = toTarget(owner, invType)
+        if not target then return false end
+        return Inventory.RemoveItem(Inventory(target), slot.Name or slot.name, 1, nil, slot.Slot or slot.slot)
+    end,
+
+    -- plain remove by item name and count, no slot targeting
+    Remove = function(self, owner, invType, itemName, count)
+        local target = toTarget(owner, invType)
+        if not target then return false end
+        return Inventory.RemoveItem(Inventory(target), itemName, count or 1)
+    end,
+
+    -- nukes every stack of an item, robbery uses this to clear access codes etc
+    RemoveAll = function(self, owner, invType, itemName)
+        local target = toTarget(owner, invType)
+        if not target then return true end
+        local inv = Inventory(target)
+        local count = Inventory.GetItemCount(inv, itemName) or 0
+        if count > 0 then return Inventory.RemoveItem(inv, itemName, count)
+        end
+        return true
+    end,
+
+    --removes a list of items in one call, weed and drugs use this for multi-ingredient recipes
+    -- items = {{ name = 'thing', count = 1 }, ...}
+    RemoveList = function(self, owner, invType, items)
+        for _, v in ipairs(items) do
+            self:Remove(owner, invType, v.name, v.count or 1)
+        end
+    end,
+
 }
 
 -- ox calls this when someone uses a non-weapon item with no consume set
 -- translates ox slot data back into the mythic item format that callbacks expect
 function server.UseItem(source, itemName, data)
     local callbacks = ItemCallbacks[itemName]
-
-    local mythicItem = {
-        Name     = data.name,
-        Slot     = data.slot,
-        Count    = data.count,
-        Metadata = data.metadata or {},
-        Quality  = data.metadata and data.metadata.quality or 100,
-    }
-
+    local mythicItem = toSlot(data, source, 1)
     local itemDef = Items(itemName)
+    local pbConfig = itemDef and itemDef.server and itemDef.server.pbConfig
+
+    if pbConfig then
+        local Callbacks = exports['mythic-base']:FetchComponent('Callbacks')
+        if Callbacks then
+            local p = promise.new()
+            Callbacks:ClientCallback(source, 'Inventory:UseItem:Progress', {
+                pbConfig = pbConfig,
+                item = mythicItem,
+            }, function(success)
+                p:resolve(success)
+            end)
+            if not Citizen.Await(p) then return end
+        end
+    end
 
     if callbacks then
         for _, cb in pairs(callbacks) do
@@ -201,45 +245,33 @@ function server.UseItem(source, itemName, data)
 
     -- auto remove if flagged as consumed but only if a callback didnt already pull it
     if itemDef and itemDef.server and itemDef.server.isRemoved then
-        local stillThere = Inventory.GetSlot(source, data.slot)
+        local stillThere = Inventory.GetSlot(Inventory(source), data.slot)
         if stillThere and stillThere.name == itemName then
-            exports['ox_inventory']:RemoveItem(source, itemName, 1, data.metadata, data.slot)
+            Inventory.RemoveItem(Inventory(source), itemName, 1, data.metadata, data.slot)
         end
     end
 end
 
 -- the shims that make FetchComponent('Inventory') work without changing any other resource
-
--- invType 1 = player (SID), anything else = stash/trunk/etc by owner ID
-Inventory.AddItem = function(self, sid, name, count, metadata, invType)
-    invType = invType or 1
-    count   = count or 1
-    if invType == 1 then
-        local source = sidToSource(sid)
-        if not source then
-            print('^1[mythic-ox-bridge] AddItem: no online player for SID ' .. tostring(sid) .. '^0')
-            return false
-        end
-        return exports['ox_inventory']:AddItem(source, name, count, metadata or {})
+Inventory.AddItem = function(self, owner, name, count, metadata, invType)
+    local target = toTarget(owner, invType)
+    if not target then
+        print('^1[mythic-ox-bridge] AddItem: could not resolve owner ' .. tostring(owner) .. '^0')
+        return false
     end
-    return exports['ox_inventory']:AddItem(sid, name, count, metadata or {})
+    return Inventory.AddItem(Inventory(target), name, count or 1, metadata or {})
 end
 
-Inventory.RemoveItem = function(self, sid, name, count, metadata, invType)
-    invType = invType or 1
-    count   = count or 1
-    if invType == 1 then
-        local source = sidToSource(sid)
-        if not source then return false end
-        return exports['ox_inventory']:RemoveItem(source, name, count, metadata)
-    end
-    return exports['ox_inventory']:RemoveItem(sid, name, count, metadata)
+Inventory.RemoveItem = function(self, owner, name, count, metadata, invType)
+    local target = toTarget(owner, invType)
+    if not target then return false end
+    return Inventory.RemoveItem(Inventory(target), name, count or 1, metadata)
 end
 
 -- all items must be present
 Inventory.HasItems = function(self, source, items)
     for _, v in ipairs(items) do
-        if (exports['ox_inventory']:Search('count', v.item, source) or 0) < (v.count or 1) then
+        if (Inventory.GetItemCount(Inventory(source), v.item) or 0) < (v.count or 1) then
             return false
         end
     end
@@ -249,11 +281,80 @@ end
 -- at least one item from the list must be present
 Inventory.HasAnyItems = function(self, source, items)
     for _, v in ipairs(items) do
-        if (exports['ox_inventory']:Search('count', v.item, source) or 0) >= (v.count or 1) then
+        if (Inventory.GetItemCount(Inventory(source), v.item) or 0) >= (v.count or 1) then
             return true
         end
     end
     return false
+end
+
+Inventory.Get = function(self, source, owner, invType, cb)
+    local target = toTarget(owner or source, invType)
+    if not target then
+        if cb then return cb({}) end
+        return {}
+    end
+    local inv = Inventory(target)
+    if not inv then
+        if cb then return cb({}) end
+        return{}
+    end
+    local result = {}
+    for i = 1, inv.slots do
+        local slot = inv.items[i]
+        result[i] = slot and toSlot(slot, owner or source, invType) or {}
+    end
+    local out = { inventory = result, owner = target, InvType = invType }
+    if cb then return cb(out)end
+    return out
+end
+
+Inventory.GetSlot = function(self, owner, slotNum, invType, cb)
+    local target = toTarget(owner, invType)
+    if not target then
+        if cb then return cb(nil) end
+        return nil
+    end
+    local slot = Inventory.GetSlot(Inventory(target), slotNum)
+    local result = toSlot(slot, owner, invType)
+    if cb then return cb(result) end
+    return result
+end
+
+Inventory.SetMetadataKey = function(self, owner, key, value, invType, slotNum)
+    local target = toTarget(owner, invType)
+    if not target then return end
+    local inv = Inventory(target)
+    if not inv then return end
+    for _, slot in pairs(inv.items) do
+        if slot.slot == slotNum then
+            local meta = slot.metadata or {}
+            meta[key] = value
+            Inventory.SetMetadata(inv, slot.slot, meta)
+            return
+        end
+    end
+end
+
+Inventory.SlotExists = function(self, owner, slotNum, invType)
+    local target = toTarget(owner, invType)
+    if not target then return false end
+    local slot = Inventory.GetSlot(Inventory(target), slotNum)
+    return slot ~= nil and slot.name ~= nil
+end
+
+Inventory.UpdateMetaData = function(self, owner, metadata, slotNum, invType)
+    local target = toTarget(owner, invType)
+    if not target then return end
+    local inv = Inventory(target)
+    if not inv then return end
+    local slot = Inventory.GetSlot(inv, slotNum)
+    if not slot then return end
+    local meta = slot.metadata or {}
+    for k, v in pairs(metadata) do
+        meta[k] = v
+    end
+    Inventory.SetMetadata(inv, slotNum, meta)
 end
 
 -- mythic-admin expects name/label/type/rarity/weight/price/isStackable/description
@@ -384,10 +485,10 @@ exports['ox_inventory']:registerHook('openInventory', function(payload)
     local owner      = payload.inventoryId
 
     -- strip the 'trunk'/'glove' prefix ox adds so mythic resources get the raw VIN/plate
-    if oxType == 'trunk' and owner:sub(1, 5) == 'trunk' then
-        owner = owner:sub(6)
-    elseif oxType == 'glovebox' and owner:sub(1, 5) == 'glove' then
-        owner = owner:sub(6)
+    if oxType == 'trunk' and owner:sub(1, 6) == 'trunk-' then
+        owner = owner:sub(7)
+    elseif oxType == 'glovebox' and owner:sub(1, 6) == 'glove-' then
+        owner = owner:sub(7)
     end
 
     TriggerEvent('Inventory:Server:Opened', payload.source, owner, invTypeNum)
