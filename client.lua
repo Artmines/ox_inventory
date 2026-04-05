@@ -188,7 +188,7 @@ function client.openInventory(inv, data)
             return lib.notify({ id = 'cannot_perform', type = 'error', description = locale('cannot_perform') })
         end
 
-        left, right, accessError = lib.callback.await('ox_inventory:openShop', 200, data)
+        left, right, accessError = lib.callback.await('ox_inventory:openShop', false, data)
     elseif inv == 'crafting' then
         if cache.vehicle then
             return lib.notify({ id = 'cannot_perform', type = 'error', description = locale('cannot_perform') })

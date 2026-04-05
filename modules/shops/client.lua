@@ -179,7 +179,7 @@ local function refreshShops()
 					::nextShop::
 				end
 			end
-		elseif shop.locations then
+		elseif shop.locations and shared.framework ~= 'mythic' then
 			if not hasShopAccess(shop) then goto skipLoop end
             local shopPrompt = { icon = 'fas fa-shopping-basket' }
 

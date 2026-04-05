@@ -351,3 +351,58 @@ ClientInventory.Shop = {
 AddEventHandler('Inventory:Client:Trunk', function(entity)
     TriggerServerEvent('ox_inventory:bridge:openTrunk', NetworkGetNetworkIdFromEntity(entity.entity))    
 end)
+
+AddEventHandler('Proxy:Shared:RegisterReady', function()
+    exports['mythic-base']:RegisterComponent('Inventory', ClientInventory)
+
+    local Callbacks = exports['mythic-base']:FetchComponent('Callbacks')
+    local Progress = exports['mythic-base']:FetchComponent('Progress')
+
+    if Callbacks and Progress then
+        Callbacks:RegisterClientCallback('Inventory:UseItem:Progress', function(data, cb)
+            Progress:Start(data.pbConfig, function(success)
+                cb(success ~= false)
+            end)
+        end)
+    end
+end)
+
+AddEventHandler('Characters:Client:Spawn', function()
+    TriggerServerEvent('ox_inventory:bridge:getShops')
+end)
+
+RegisterNetEvent('ox_inventory:bridge:receiveShops', function(shops)
+    local PedInteraction = exports['mythic-base']:FetchComponent('PedInteraction')
+    local Blips = exports['mythic-base']:FetchComponent('Blips')
+    if not shops or not PedInteraction then return end
+    for _, v in ipairs(shops) do
+        PedInteraction:Add(
+            'shop-' .. v.id,
+            GetHashKey(v.npc),
+            vector3(v.coords.x, v.coords.y, v.coords.z),
+            v.coords.h,
+            25.0,
+            {{
+                icon = 'sack-dollar',
+                text = v.name or 'Shop',
+                event = 'Shop:Client:OpenShop',
+                data = { shopType = v.shopType, locId = v.locId },
+            }},
+            'shop'
+        )
+        if v.blip and Blips then
+            Blips:Add(
+                'inventory_shop_' .. v.id,
+                v.name, 
+                vector3(v.coords.x, v.coords.y, v.coords.z),
+                v.blip.id,
+                v.blip.colour,
+                v.blip.scale
+            )
+        end
+    end
+end)
+
+AddEventHandler('Shop:Client:OpenShop', function(obj, data)
+    exports['ox_inventory']:openInventory('shop', { type = data.shopType, id = data.locId })
+end)

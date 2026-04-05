@@ -728,3 +728,30 @@ RegisterNetEvent('ox_inventory:bridge:openTrunk', function(netId)
     if not vin then return end
     exports['ox_inventory']:forceOpenInventory(src, 'trunk', {netid = netId})
 end)
+
+local _shopPedData = nil
+local function buildShopPedData()
+    if _shopPedData then return _shopPedData end
+    local shopDefs = lib.load('data.shops') or {}
+    _shopPedData = {}
+    for shopType, shopData in pairs(shopDefs) do
+        if shopData.locations and shopData.npc then
+            for i, loc in ipairs(shopData.locations) do
+                _shopPedData[#_shopPedData+1] = {
+                    id = shopType .. '_' .. i,
+                    shopType = shopType,
+                    locId = i,
+                    name = shopData.name,
+                    npc = shopData.npc,
+                    coords = { x= loc.x, y = loc.y, z = loc.z, h = loc.w or 0.0 },
+                    blip = shopData.blip,
+                }
+            end
+        end
+    end
+    return _shopPedData
+end
+
+RegisterNetEvent('ox_inventory:bridge:getShops', function()
+    TriggerClientEvent('ox_inventory:bridge:receiveShops', source, buildShopPedData())
+end)

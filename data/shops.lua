@@ -2,6 +2,7 @@
       General = {
           name = 'General Store',
           blip = { id = 52, colour = 69, scale = 0.4 },
+          npc = 's_m_m_ammucountry', --s_m_m_ammucountry, mp_m_shopkeep_01
           inventory = {
               { name = 'sandwich',       price = 3   },
               { name = 'sandwich_egg',   price = 3   },
@@ -17,28 +18,28 @@
               { name = 'rolling_paper',  price = 20  },
           },
           locations = {
-              vec3(-47.055,   -1758.926, 28.421),
-              vec3(24.299,    -1347.754, 28.497),
-              vec3(812.788,   -782.145,  25.175),
-              vec3(-706.170,  -914.450,  18.220),
-              vec3(-548.526,  -582.987,  33.682),
-              vec3(1164.832,  -323.686,  68.205),
-              vec3(372.375,   325.974,   102.566),
-              vec3(-1819.493, 793.468,   137.086),
-              vec3(-3241.760, 999.744,   11.830),
-              vec3(-3038.401, 584.503,   6.909),
-              vec3(549.138,   2671.834,  41.156),
-              vec3(1960.242,  3739.443,  31.344),
-              vec3(2678.515,  3279.066,  54.241),
-              vec3(2557.883,  380.803,   107.623),
-              vec3(1697.360,  4923.383,  41.064),
-              vec3(1727.500,  6414.857,  34.037),
+            vec4(-47.055,   -1758.926, 28.421,  52.484),                                                   vec4(24.299,    -1347.754, 28.497,  283.620),
+            vec4(812.788,   -782.145,  25.175,  270.922),
+            vec4(-706.170,  -914.450,  18.220,  95.835),
+            vec4(-548.526,  -582.987,  33.682,  179.468),
+            vec4(1164.832,  -323.686,  68.205,  98.726),
+            vec4(372.375,   325.974,   102.566, 285.0),
+            vec4(-1819.493, 793.468,   137.086, 133.274),
+            vec4(-3241.760, 999.744,   11.830,  16.104),
+            vec4(-3038.401, 584.503,   6.909,   39.319),
+            vec4(549.138,   2671.834,  41.156,  120.0),
+            vec4(1960.242,  3739.443,  31.344,  335.0),
+            vec4(2678.515,  3279.066,  54.241,  10.0),
+            vec4(2557.883,  380.803,   107.623, 355.440),
+            vec4(1697.360,  4923.383,  41.064,  329.586),
+            vec4(1727.500,  6414.857,  34.037,  265.0),
           },
       },
 
       HospitalCafe = {
           name = 'Hospital Café',
           blip = { id = 52, colour = 69, scale = 0.4 },
+          npc = 's_m_m_doctor_01',
           inventory = {
               { name = 'firstaid',     price = 250 },
               { name = 'bandage',      price = 50  },
@@ -46,12 +47,13 @@
               { name = 'sandwich_blt', price = 5   },
               { name = 'coffee',       price = 295 },
           },
-          locations = { vec3(86.613, -394.750, 38.378) },
+          locations = { vec4(86.613, -394.750, 38.378, 155.694) },
       },
 
       Liquor = {
           name = 'Liquor Store',
           blip = { id = 52, colour = 64, scale = 0.4 },
+          npc = 's_m_m_cntrybar_01',
           inventory = {
               { name = 'vodka',          price = 150 },
               { name = 'beer',           price = 100 },
@@ -67,16 +69,17 @@
               { name = 'rolling_paper',  price = 20  },
           },
           locations = {
-              vec3(-2966.381, 391.449,  14.043),
-              vec3(-1486.740, -377.561, 39.163),
-              vec3(1134.331,  -983.138, 45.416),
-              vec3(-1221.469, -907.976, 11.326),
+            vec4(-2966.381, 391.449,  14.043, 83.353),
+            vec4(-1486.740, -377.561, 39.163, 140.267),
+            vec4(1134.331,  -983.138, 45.416, 280.875),
+            vec4(-1221.469, -907.976, 11.326, 31.397),
           },
       },
 
       Ammunation = {
           name = 'Ammunation',
           blip = { id = 110, colour = 6, scale = 0.45 },
+          npc = 'mp_m_exarmy_01',
           inventory = {
               { name = 'armor',        price = 750  },
               { name = 'heavyarmor',   price = 2250 },
@@ -86,23 +89,24 @@
               { name = 'WEAPON_BAT',   price = 0   },
           },
           locations = {
-              vec3(18.009,    -1107.660, 28.797),
-              vec3(-659.143,  -939.415,  20.829),
-              vec3(-544.952,  -584.108,  33.682),
-              vec3(813.790,   -2155.183, 28.619),
-              vec3(-326.378,  6081.514,  30.455),
-              vec3(1697.864,  3757.567,  33.705),
-              vec3(2564.758,  298.400,   107.735),
-              vec3(-1310.348, -394.368,  35.696),
-              vec3(247.459,   -51.610,   68.941),
-              vec3(841.177,   -1029.037, 27.195),
-              vec3(-1112.734, 2697.436,  17.554),
+            vec4(18.009,    -1107.660, 28.797, 162.079),
+            vec4(-659.143,  -939.415,  20.829, 85.797),
+            vec4(-544.952,  -584.108,  33.682, 272.408),
+            vec4(813.790,   -2155.183, 28.619, 358.648),
+            vec4(-326.378,  6081.514,  30.455, 133.468),
+            vec4(1697.864,  3757.567,  33.705, 136.413),
+            vec4(2564.758,  298.400,   107.735, 270.924),
+            vec4(-1310.348, -394.368,  35.696, 348.688),
+            vec4(247.459,   -51.610,   68.941, 345.336),
+            vec4(841.177,   -1029.037, 27.195, 261.737),
+            vec4(-1112.734, 2697.436,  17.554, 132.674),
           },
       },
 
       Hardware = {
           name = 'Hardware Store',
           blip = { id = 566, colour = 28, scale = 0.4 },
+          npc = 'mp_m_waremech_01',
           inventory = {
               { name = 'screwdriver',           price = 400  },
               { name = 'WEAPON_HAMMER',         price = 0    },
@@ -122,13 +126,14 @@
               { name = 'drill',                 price = 5000 },
           },
           locations = {
-              vec3(46.131,   -1749.423, 28.639),
-              vec3(2747.878, 3472.742,  54.673),
+            vec4(46.131,   -1749.423, 28.639, 46.417),
+            vec4(2747.878, 3472.742,  54.673, 248.582),
           },
       },
 
       MedicalSupplies = {
           name = 'Medical Supplies',
+          npc = 's_m_m_doctor_01',
           inventory = {
               { name = 'traumakit',  price = 500  },
               { name = 'medicalkit', price = 1000 },
@@ -147,6 +152,7 @@
 
       Pharmacy = {
           name = 'Pharmacy',
+          npc = 's_m_m_scientist_01',
           inventory = {
               { name = 'firstaid',     price = 250 },
               { name = 'bandage',      price = 50  },
@@ -158,6 +164,7 @@
 
       DigitalDen = {
           name = 'Digital Den',
+          npc = 'ig_lestercrest',
           inventory = {
               { name = 'phone',           price = 100  },
               { name = 'radio_shitty',    price = 2500 },
@@ -170,6 +177,7 @@
       FoodWholesaler = {
           name = 'Food Wholesaler',
           blip = { id = 90, colour = 69, scale = 0.4 },
+          npc = 's_m_m_strvend_01',
           inventory = {
               { name = 'dough',             price = 0 },
               { name = 'eggs',              price = 0 },
@@ -195,6 +203,7 @@
 
       SmokeOnTheWater = {
           name = 'Smoke on the Water',
+          npc = 'mp_f_weed_01',
           inventory = {
               { name = 'weed_joint',    price = 25 },
               { name = 'rolling_paper', price = 20 },
@@ -204,12 +213,14 @@
 
       Winery = {
           name = 'Winery',
+          npc = 's_m_m_migrant_01',
           inventory = {
               { name = 'wine_bottle', price = 300 },
           },
           locations = { vec3(-1911.636, 2074.202, 139.387) },
       },
 
+      -- DOES NOT NEED NPCS SCRIPT SHOULD HANDLE IT (unless some special shit)
       -- special shops opened programmatically (no locations, no markers)
       ['shop:hunting-supplies'] = {
           name = 'Hunting Supplies',

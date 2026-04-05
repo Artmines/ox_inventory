@@ -99,8 +99,8 @@ local function createShop(shopType, id)
 		items = table.clone(shop.inventory),
 		slots = #shop.inventory,
 		type = 'shop',
-		coords = coords,
-		distance = shared.target and shop.targets?[id]?.distance,
+		coords = coords and vector3(coords.x, coords.y, coords.z),
+		distance = shared.target and shop.targets?[id]?.distance or shop.distance or 10,
 	}
 
 	setupShopItems(id, shopType, shop.name, groups)
@@ -141,7 +141,7 @@ lib.callback.register('ox_inventory:openShop', function(source, data)
 			if not group then return end
 		end
 
-		if type(shop.coords) == 'vector3' and #(GetEntityCoords(GetPlayerPed(source)) - shop.coords) > 10 then
+		if shared.framework ~= 'mythic' and type(shop.coords) == 'vector3' and #(GetEntityCoords(GetPlayerPed(source)) - shop.coords) > 10 then
 			return
 		end
 
