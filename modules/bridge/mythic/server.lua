@@ -485,6 +485,11 @@ end
 -- handles opening stashes, trunks, gloveboxes, drops, shops
 -- registers stashes with ox on first open so we dont have to preregister every single one
 local registeredStashes = {}
+local _polyInvs =  {}
+local _shopDutyRestrictions = {
+    ['armory:police'] = 'police',
+    ['armory:doc'] = 'corrections',
+}
 
 local invTypeToOxType = {
     [3]  = 'stash', -- police weapon rack (pdrack:VIN)
@@ -493,9 +498,22 @@ local invTypeToOxType = {
     [10] = 'drop',
     [11] = 'shop',
     [13] = 'stash',
+    [27] = 'shop', --PD Armory
+    [37] = 'shop', -- DOC Armory
     [44] = 'stash', -- evidence case locker
     [45] = 'stash', -- personal pd/ems locker
 }
+
+exports['ox_inventory']:registerHook('openShop', function(payload)
+    local shopType = payload.shop and payload.shop.type
+    local required = shopType and _shopDutyRestrictions[shopType]
+    if not required then return true end
+    local onDuty = Player(payload.source).state.onDuty
+    if onDuty ~= required then
+        return false
+    end
+    return true
+end)
 
 Inventory.OpenSecondary = function(self, source, invType, owner, vehClass, vehModel, isRaid, nameOverride, slotOverride, capacityOverride)
     if not source or not invType or not owner then return end
@@ -543,11 +561,17 @@ Inventory.Poly = {
         if not storage or not storage.id then return end
         local inv = storage.data and storage.data.inventory
         local owner = (inv and inv.owner) or storage.id
+        local slots = (inv and inv.slots) or 50
+        local capacity = (inv and inv.capacity) or 100000
 
-        if not registeredStashes[owner] then
-            exports['ox_inventory']:RegisterStash(owner, storage.id, 50, 100000)
+        local invType = inv and inv.invType or 13
+        local oxType = invTypeToOxType[invType] or 'stash'
+        if oxType ~= 'shop' and not registeredStashes[owner] then
+            exports['ox_inventory']:RegisterStash(owner, storage.name or storage.id, slots, capacity)
             registeredStashes[owner] = true
         end
+        table.insert(_polyInvs, storage.id)
+        GlobalState[('Inventory:%s'):format(storage.id)] = storage
     end
 }
 
@@ -667,6 +691,7 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
             sex         = char:GetData('Gender') or 0,
             dateofbirth = char:GetData('DOB') or '',
         })
+        TriggerClientEvent('Inventory:Client:PolySetup', source, _polyInvs)
     end, 5)
 
     -- close and remove inventory on character logout

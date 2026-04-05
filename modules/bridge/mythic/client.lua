@@ -21,6 +21,16 @@
 
 local WeaponsStub = {}
 
+_polyShopRestrictions = {
+    ['armory:police'] = 'police',
+    ['armory:doc'] = 'corrections'
+}
+
+_polyShopTypes = {
+    [27] = 'armory:police',
+    [37] = 'armory:doc',
+}
+
 WeaponsStub.GetEquippedItem = function(self)
     return nil
 end
@@ -405,4 +415,46 @@ end)
 
 AddEventHandler('Shop:Client:OpenShop', function(obj, data)
     exports['ox_inventory']:openInventory('shop', { type = data.shopType, id = data.locId })
+end)
+
+_inInvPoly = nil
+
+RegisterNetEvent('Inventory:Client:PolySetup', function(locs)
+    local Polyzone = exports['mythic-base']:FetchComponent('Polyzone')
+    if not Polyzone or not locs then return end
+    for _, id in ipairs(locs) do
+        local data = GlobalState[('Inventory:%s'):format(id)]
+        if data then
+            if data.data then
+                data.data.isInventory = true
+                data.data.name = data.name
+            end
+            if data.type == 'box' then
+                Polyzone.Create:Box(data.id, data.coords, data.length, data.width, data.options, data.data)
+            elseif data.type == 'poly' then
+                Polyzone.Create:Poly(data.id, data.points, data.options, data.data)
+            else
+                Polyzone.Create:Circle(data.id, data.coords, data.radius, data.options, data.data)
+            end
+        end
+    end
+end)
+
+AddEventHandler('Polyzone:Enter', function(id, testedPoint, insideZones, data)
+    if not data or not data.isInventory then return end
+    local Action = exports['mythic-base']:FetchComponent('Action')
+    if Action then Action:Show('Open '.. (data.name or 'Storage')) end
+    _inInvPoly = data
+    LocalPlayer.state:set('_inInvPoly', data, false)
+end)
+
+AddEventHandler('Polyzone:Exit', function(id, testedPoint, insideZones, data)
+    if not data or not data.isInventory then return end
+    local Action = exports['mythic-base']:FetchComponent('Action')
+    if Action then Action:Hide() end
+    if LocalPlayer.state.inventoryOpen then
+        client.closeInventory()
+    end
+    _inInvPoly = nil
+    LocalPlayer.state:set('_inInvPoly', nil, false)
 end)

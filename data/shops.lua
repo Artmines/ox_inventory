@@ -256,15 +256,72 @@
               { name = 'personal_plates', price = 5000 },
           },
       },
-      ['shop:vending-water']  = { name = 'Water Machine',          inventory = { { name = 'water',        price = 3
-     } } },
-      ['shop:vending-coffee'] = { name = 'Coffee Machine',         inventory = { { name = 'coffee',       price =
-  295 } } },
-      ['shop:vending-drinks'] = { name = 'Drinks Vending Machine', inventory = { { name = 'water', price = 3 }, {
-  name = 'soda', price = 25 }, { name = 'energy_pepe', price = 110 } } },
-      ['shop:vending-food']   = { name = 'Food Vending Machine',   inventory = { { name = 'chocolate_bar', price =
-  25 }, { name = 'donut', price = 105 }, { name = 'crisp', price = 25 } } },
-      ['shop:fuel-pump']      = { name = 'Fuel Pump',              inventory = { { name = 'WEAPON_PETROLCAN', price
-   = 0 } } },
+      ['shop:vending-water']  = { name = 'Water Machine',          inventory = { 
+            { name = 'water',        price = 3 } 
+        } 
+    },
+      ['shop:vending-coffee'] = { name = 'Coffee Machine',         inventory = { 
+            { name = 'coffee',       price = 295 } 
+        } 
+    },
+      ['shop:vending-drinks'] = { name = 'Drinks Vending Machine', inventory = { 
+        { name = 'water', price = 3 }, 
+        {name = 'soda', price = 25 },
+        { name = 'energy_pepe', price = 110 }
+        }
+     },
+      ['shop:vending-food']   = { name = 'Food Vending Machine',   inventory = { 
+        { name = 'chocolate_bar', price = 25 },
+        { name = 'donut', price = 105 }, 
+        { name = 'crisp', price = 25 } 
+        } 
+    },
+      ['shop:fuel-pump']      = { name = 'Fuel Pump',              inventory = { 
+        { name = 'WEAPON_PETROLCAN', price = 0 } 
+        } 
+    },
+      ['armory:police'] = {
+      name = 'PD Armory',
+      inventory = {
+          { name = 'pdarmor',           price = 0 },
+          { name = 'ifak',              price = 0 },
+          { name = 'pdhandcuffs',       price = 0 },
+          { name = 'spikes',            price = 0 },
+          { name = 'WEAPON_FLASHLIGHT', price = 0 },
+          { name = 'WEAPON_TASER',      price = 0 },
+          { name = 'WEAPON_BEANBAG',    price = 0 },
+          { name = 'WEAPON_G17',        price = 0 },
+          { name = 'WEAPON_HKUMP',      price = 0 },
+          { name = 'WEAPON_HK416B',     price = 0 },
+          { name = 'AMMO_PISTOL_PD',    price = 0 },
+          { name = 'AMMO_SHOTGUN_PD',   price = 0 },
+          { name = 'AMMO_SMG_PD',       price = 0 },
+          { name = 'AMMO_RIFLE_PD',     price = 0 },
+          { name = 'AMMO_STUNGUN',      price = 0 },
+          { name = 'radio',             price = 0 },
+          { name = 'binoculars',        price = 0 },
+          { name = 'camera',            price = 0 },
+          { name = 'phone',             price = 0 },
+          { name = 'WEAPON_FLASHBANG',  price = 0 },
+          { name = 'WEAPON_SMOKEGRENADE', price = 0 },
+      },
+  },
+    ['armory:doc'] = {
+      name = 'DOC Armory',
+      inventory = {
+          { name = 'pdarmor',       price = 0 },
+          { name = 'traumakit',     price = 0 },
+          { name = 'ifak',          price = 0 },
+          { name = 'pdhandcuffs',   price = 0 },
+          { name = 'WEAPON_TASER',  price = 0 },
+          { name = 'WEAPON_G17',    price = 0 },
+          { name = 'AMMO_PISTOL_PD', price = 0 },
+          { name = 'AMMO_RIFLE_PD', price = 0 },
+          { name = 'AMMO_SHOTGUN_PD', price = 0 },
+          { name = 'AMMO_STUNGUN',  price = 0 },
+          { name = 'radio',         price = 0 },
+          { name = 'phone',         price = 0 },
+      },
+  },
   }
 

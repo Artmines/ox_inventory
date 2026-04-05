@@ -775,6 +775,19 @@ local function registerCommands()
 
 			local closest = lib.points.getClosestPoint()
 
+			if _inInvPoly and _inInvPoly.inventory then
+				local invType = _inInvPoly.inventory.invType
+				local shopKey = _polyShopTypes and _polyShopTypes[invType]
+				if shopKey then
+					local requiredDuty = _polyShopRestrictions and _polyShopRestrictions[shopKey]
+					if requiredDuty and LocalPlayer.state.onDuty ~= requiredDuty then
+						return lib.notify({ type = 'error', description = 'You are not authorized to access this'})
+					end
+					return client.openInventory('shop', { type = shopKey })
+				end
+				return client.openInventory('stash', { id = _inInvPoly.inventory.owner })
+			end
+
 			if closest and closest.currentDistance < 1.2 and (not closest.instance or closest.instance == currentInstance) then
 				if closest.inv == 'crafting' then
 					return client.openInventory('crafting', { id = closest.id, index = closest.index })
