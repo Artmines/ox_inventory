@@ -169,17 +169,38 @@ lib.callback.register('ox_inventory:openShop', function(source, data)
 	return { label = playerInv.label, type = playerInv.type, slots = playerInv.slots, weight = playerInv.weight, maxWeight = playerInv.maxWeight }, shop
 end)
 
-local function canAffordItem(inv, currency, price)
-	local canAfford = price >= 0 and Inventory.GetItemCount(inv, currency) >= price
+local function getWallet(inv)
+    if not inv?.player then return nil end
+    local player = exports['mythic-base']:FetchComponent('Fetch'):Source(inv.player.source)
+    if not player then return nil end
+    return player:GetData('Character')
+end
 
-	return canAfford or {
-		type = 'error',
-		description = locale('cannot_afford', ('%s%s'):format((currency == 'money' and locale('$') or math.groupdigits(price)), (currency == 'money' and math.groupdigits(price) or ' '..Items(currency).label)))
-	}
+local function canAffordItem(inv, currency, price)
+    if currency == 'money' or currency == 'cash' then
+        local char = getWallet(inv)
+        local canAfford = price >= 0 and char and (char:GetData('Cash') or 0) >= price
+        return canAfford or {
+            type = 'error',
+            description = locale('cannot_afford', ('$%s'):format(math.groupdigits(price)))
+        }
+    end
+
+    local canAfford = price >= 0 and Inventory.GetItemCount(inv, currency) >= price
+    return canAfford or {
+        type = 'error',
+        description = locale('cannot_afford', ('%s %s'):format(math.groupdigits(price), Items(currency).label))
+    }
 end
 
 local function removeCurrency(inv, currency, price)
-	Inventory.RemoveItem(inv, currency, price)
+    if currency == 'money' or currency == 'cash' then
+        local char = getWallet(inv)
+        if not char then return end
+        char:SetData('Cash', (char:GetData('Cash') or 0) - price)
+        return
+    end
+    Inventory.RemoveItem(inv, currency, price)
 end
 
 local function isRequiredGrade(grade, rank)

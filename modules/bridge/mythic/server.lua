@@ -124,35 +124,13 @@ local function updateCharacterStates(source, inv)
     end
 end
 
-local _cashSyncing = {}
-
+-- cash is handled entirely by the mythic Wallet component (char:GetData/SetData 'Cash')
+-- ox shop payments route through server.canAfford / server.removeMoney in shops/server.lua
+-- no money item in inventory, no bidirectional sync needed
 function server.syncInventory(inv)
     if not inv?.player then return end
-    if _cashSyncing[inv.player.source] then return end
-    local player = exports['mythic-base']:FetchComponent('Fetch'):Source(inv.player.source)
-    if not player then return end
-    local char = player:GetData('Character')
-    if not char then return end
-    char:SetData('Cash', Inventory.GetItemCount(inv, 'money') or 0)
     updateCharacterStates(inv.player.source, inv)
 end
-
-AddEventHandler('Characters:Server:SetData', function(playerSrc, var, value)
-    if var ~= 'Cash' then return end
-    if _cashSyncing[playerSrc] then return end
-    local amount = math.floor(tonumber(value) or 0)
-    local inv = Inventory(playerSrc)
-    if not inv then return end
-    local current = Inventory.GetItemCount(inv, 'money') or 0
-    if amount == current then return end -- already in sync?????
-    _cashSyncing[playerSrc] = true
-    if amount > current then
-        exports['ox_inventory']:AddItem(playerSrc, 'money', amount - current)
-    else
-        exports['ox_inventory']:RemoveItem(playerSrc, 'money', current - amount)
-    end
-    _cashSyncing[playerSrc] = nil
-end)
 
 function server.hasGroup(inv, group)
     if not inv?.player then return end
@@ -341,19 +319,31 @@ function server.UseItem(source, itemName, data)
 end
 
 -- the shims that make FetchComponent('Inventory') work without changing any other resource
+-- capture originals BEFORE replacing so inner calls use the real ox functions
+-- shims detect calling convention: ox-internal passes an inventory object (has .slots),
+-- mythic component calls pass the module table as self with owner/name/count args
+local _origAddItem    = Inventory.AddItem
+local _origRemoveItem = Inventory.RemoveItem
+
 Inventory.AddItem = function(self, owner, name, count, metadata, invType)
+    if type(self) == 'table' and self.slots then
+        return _origAddItem(self, owner, name, count, metadata, invType)
+    end
     local target = toTarget(owner, invType)
     if not target then
         print('^1[mythic-ox-bridge] AddItem: could not resolve owner ' .. tostring(owner) .. '^0')
         return false
     end
-    return Inventory.AddItem(Inventory(target), name, count or 1, metadata or {})
+    return _origAddItem(Inventory(target), name, count or 1, metadata or {})
 end
 
 Inventory.RemoveItem = function(self, owner, name, count, metadata, invType)
+    if type(self) == 'table' and self.slots then
+        return _origRemoveItem(self, owner, name, count, metadata, invType)
+    end
     local target = toTarget(owner, invType)
     if not target then return false end
-    return Inventory.RemoveItem(Inventory(target), name, count or 1, metadata)
+    return _origRemoveItem(Inventory(target), name, count or 1, metadata)
 end
 
 -- all items must be present
