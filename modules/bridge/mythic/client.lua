@@ -364,3 +364,9 @@ end
 ClientInventory.Items.Has = function(self, item, count)
     return ClientInventory.Items:GetCount(item) >= (count or 1)
 end
+
+ClientInventory.Shop = {
+    Open = function(self, shopId)
+       TriggerServerEvent('ox_inventory:bridge:openShop', shopId) 
+    end,
+}

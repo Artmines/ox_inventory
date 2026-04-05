@@ -124,8 +124,11 @@ local function updateCharacterStates(source, inv)
     end
 end
 
+local _cashSyncing = {}
+
 function server.syncInventory(inv)
     if not inv?.player then return end
+    if _cashSyncing[inv.player.source] then return end
     local player = exports['mythic-base']:FetchComponent('Fetch'):Source(inv.player.source)
     if not player then return end
     local char = player:GetData('Character')
@@ -133,6 +136,23 @@ function server.syncInventory(inv)
     char:SetData('Cash', Inventory.GetItemCount(inv, 'money') or 0)
     updateCharacterStates(inv.player.source, inv)
 end
+
+AddEventHandler('Characters:Server:SetData', function(playerSrc, var, value)
+    if var ~= 'Cash' then return end
+    if _cashSyncing[playerSrc] then return end
+    local amount = math.floor(tonumber(value) or 0)
+    local inv = Inventory(playerSrc)
+    if not inv then return end
+    local current = Inventory.GetItemCount(inv, 'money') or 0
+    if amount == current then return end -- already in sync?????
+    _cashSyncing[playerSrc] = true
+    if amount > current then
+        exports['ox_inventory']:AddItem(playerSrc, 'money', amount - current)
+    else
+        exports['ox_inventory']:RemoveItem(playerSrc, 'money', current - amount)
+    end
+    _cashSyncing[playerSrc] = nil
+end)
 
 function server.hasGroup(inv, group)
     if not inv?.player then return end
@@ -681,14 +701,6 @@ end)
 local ok, err = pcall(require, 'modules.bridge.mythic.items')
 if not ok then print('^1[mythic-ox-bridge] items load error: ' .. tostring(err) .. '^0') end
 
--- shops use exports['ox_inventory']:RegisterShop which isn't available until ox is fully ready
--- defer until shared.ready is true
-CreateThread(function()
-    while not shared.ready do Wait(0) end
-    local ok2, err2 = pcall(require, 'modules.bridge.mythic.shops')
-    if not ok2 then print('^1[mythic-ox-bridge] shops load error: ' .. tostring(err2) .. '^0') end
-end)
-
 -- rebuild groups when someones job changes
 AddEventHandler('Jobs:Server:JobUpdate', function(source)
     local inv = Inventory(source)
@@ -704,4 +716,9 @@ AddEventHandler('Jobs:Server:JobUpdate', function(source)
         groups[v.Id] = v.Grade and v.Grade.Level or 0
     end
     inv.player.groups = groups
+end)
+
+RegisterNetEvent('ox_inventory:bridge:openShop', function(shopId)
+    local src = source
+    Inventory.OpenSecondary(Inventory.Items, src, 11, ('shop:%s'):format(tostring(shopId)))
 end)

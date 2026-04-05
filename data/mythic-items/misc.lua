@@ -694,4 +694,20 @@ return {
 		isDestroyed = true,
 		durability = (60 * 60 * 24 * 7),
 	},
+	{
+		name = "money",
+		label = "Money",
+		weight = 0,
+		isStackable = true,
+		type = 6,
+		rarity = 0,
+	},
+	{
+		name = "black_money",
+		label = "Dirty Money",
+		weight = 0,
+		isStackable = true,
+		type = 6,
+		rarity = 0,
+	}
 }
