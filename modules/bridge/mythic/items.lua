@@ -23,6 +23,7 @@ local function ConvertItem(item)
             mythicRarity = item.rarity,
             state        = item.state,
             isRemoved    = item.isRemoved or false,
+            animConfig = item.animConfig or nil,
         },
     }
 
@@ -81,7 +82,7 @@ local function registerConsumableUse(item)
             item.energyModifier.skipScreenEffects)
         end
         if item.progressModifier then
-            TriggerClientEvent('Execute:Client', source, 'Progress', 'Modifier',
+            TriggerClientEvent('Execute:Client:Component', source, 'Progress', 'Modifier',
             item.progressModifier.modifier,
             math.random(item.progressModifier.min, item.progressModifier.max) * 60000)
         end

@@ -136,10 +136,45 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
     local Progress = exports['mythic-base']:FetchComponent('Progress')
 
     if Callbacks and Progress then
-        Callbacks:RegisterClientCallback('Inventory:UseItem:Progress', function(data, cb)
-            Progress:Start(data.pbConfig, function(success)
-                cb(success ~= false)
-            end)
+        Callbacks:RegisterClientCallback('Inventory:ItemUse', function(data, cb)
+            local Anims = exports['mythic-base']:FetchComponent('Animations')
+
+            if data.anim and (not data.pbConfig or not data.pbConfig.animation) then
+                if Anims and Anims.Emotes then
+                    Anims.Emotes:Play(data.anim, false, data.time, true)
+                end
+            end
+
+            if data.pbConfig then
+                Progress:Progress({
+                    name = data.pbConfig.name,
+                    duration = data.time,
+                    label = data.pbConfig.label,
+                    useWhileDead = data.pbConfig.useWhileDead,
+                    canCancel = data.pbConfig.canCancel,
+                    vehicle = data.pbConfig.vehicle,
+                    disarm = data.pbConfig.disarm,
+                    ignoreModifier = data.pbConfig.ignoreModifier or true,
+                    animation = data.pbConfig.animation or false,
+                    controlDisables = {
+                        disableMovement = data.pbConfig.disableMovement,
+                        disableCarMovement = data.pbConfig.disableCarMovement,
+                        disableMouse = data.pbConfig.disableMouse,
+                        disableCombat = data.pbConfig.disableCombat,
+                    },
+                }, function(cancelled)
+                    pcall(function()
+                        if Anims and Anims.Emotes then Anims.Emotes:ForceCancel() end
+                    end)
+                    cb(not cancelled)
+                end)
+            else
+                cb(true)
+            end
+        end)
+        Callbacks:RegisterClientCallback('Inventory:Compartment:Open', function(data, cb)
+            exports['ox_inventory']:closeInventory()
+            cb(true)
         end)
     end
 end)
@@ -360,21 +395,6 @@ ClientInventory.Shop = {
 
 AddEventHandler('Inventory:Client:Trunk', function(entity)
     TriggerServerEvent('ox_inventory:bridge:openTrunk', NetworkGetNetworkIdFromEntity(entity.entity))    
-end)
-
-AddEventHandler('Proxy:Shared:RegisterReady', function()
-    exports['mythic-base']:RegisterComponent('Inventory', ClientInventory)
-
-    local Callbacks = exports['mythic-base']:FetchComponent('Callbacks')
-    local Progress = exports['mythic-base']:FetchComponent('Progress')
-
-    if Callbacks and Progress then
-        Callbacks:RegisterClientCallback('Inventory:UseItem:Progress', function(data, cb)
-            Progress:Start(data.pbConfig, function(success)
-                cb(success ~= false)
-            end)
-        end)
-    end
 end)
 
 AddEventHandler('Characters:Client:Spawn', function()

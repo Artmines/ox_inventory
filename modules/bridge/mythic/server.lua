@@ -287,15 +287,16 @@ function server.UseItem(source, itemName, data)
     local callbacks = ItemCallbacks[itemName]
     local mythicItem = toSlot(data, source, 1)
     local itemDef = Items(itemName)
-    local pbConfig = itemDef and itemDef.server and itemDef.server.pbConfig
+    local animConfig = itemDef and itemDef.server and itemDef.server.animConfig
 
-    if pbConfig then
+    if animConfig then
         local Callbacks = exports['mythic-base']:FetchComponent('Callbacks')
         if Callbacks then
             local p = promise.new()
-            Callbacks:ClientCallback(source, 'Inventory:UseItem:Progress', {
-                pbConfig = pbConfig,
-                item = mythicItem,
+            Callbacks:ClientCallback(source, 'Inventory:ItemUse', {
+                anim = animConfig.anim,
+                time = animConfig.time,
+                pbConfig = animConfig.pbConfig,
             }, function(success)
                 p:resolve(success)
             end)
@@ -492,16 +493,38 @@ local _shopDutyRestrictions = {
 }
 
 local invTypeToOxType = {
-    [3]  = 'stash', -- police weapon rack (pdrack:VIN)
-    [4]  = 'trunk',
-    [5]  = 'glovebox',
-    [10] = 'drop',
-    [11] = 'shop',
-    [13] = 'stash',
-    [27] = 'shop', --PD Armory
-    [37] = 'shop', -- DOC Armory
-    [44] = 'stash', -- evidence case locker
-    [45] = 'stash', -- personal pd/ems locker
+      -- trunks / gloveboxes / drops
+      [4]  = 'trunk',
+      [5]  = 'glovebox',
+      [10] = 'drop',
+      -- stashes
+      [3]  = 'stash', -- police weapon rack
+      [13] = 'stash', -- apartment/personal stash
+      [44] = 'stash', -- evidence case locker
+      [45] = 'stash', -- personal pd/ems locker
+      -- shops
+      [6]   = 'shop', -- liquor store
+      [7]   = 'shop', -- hardware store
+      [11]  = 'shop', -- general shop
+      [12]  = 'shop', -- ammunation
+      [26]  = 'shop', -- medical supply
+      [27]  = 'shop', -- pd armory
+      [28]  = 'shop', -- hunting supplies
+      [37]  = 'shop', -- doc armory
+      [38]  = 'shop', -- vending
+      [39]  = 'shop', -- vending
+      [40]  = 'shop', -- vending
+      [41]  = 'shop', -- vending
+      [42]  = 'shop', -- pharmacy
+      [43]  = 'shop', -- fuel station
+      [61]  = 'shop', -- food wholesaler
+      [62]  = 'shop', -- smoke on the water
+      [74]  = 'shop', -- digital den
+      [76]  = 'shop', -- winery
+      [99]  = 'shop', -- fishing supplies
+      [112] = 'shop',
+      [115] = 'shop', -- doj shop
+      [5005] = 'shop', -- cafe
 }
 
 exports['ox_inventory']:registerHook('openShop', function(payload)
@@ -517,15 +540,21 @@ end)
 
 Inventory.OpenSecondary = function(self, source, invType, owner, vehClass, vehModel, isRaid, nameOverride, slotOverride, capacityOverride)
     if not source or not invType or not owner then return end
+    owner = tostring(owner)
 
     local oxType  = invTypeToOxType[invType]
-    local isStash = oxType == 'stash' or invType >= 1000
-
+    local isStash = oxType == 'stash' or (oxType == nil and invType ~= 4 and invType ~= 5 and invType ~= 10)
+    local stashLabel = nameOverride or ({
+        [13] = 'Apartment Stash',
+        [44] = 'Evidence Locker',
+        [45] = 'Personal Locker',
+        [3] = 'Police Weapon Rack',
+    })[invType] or owner
     if isStash then
         if not registeredStashes[owner] then
             exports['ox_inventory']:RegisterStash(
                 owner,
-                nameOverride or owner,
+                stashLabel,
                 slotOverride or 50,
                 capacityOverride or 100000
             )
