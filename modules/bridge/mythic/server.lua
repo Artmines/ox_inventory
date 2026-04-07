@@ -669,6 +669,12 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
     local Fetch      = exports['mythic-base']:FetchComponent('Fetch')
     local Config     = exports['mythic-base']:FetchComponent('Config')
 
+    local _newCharSources = {}
+    Middleware:Add('Characters:Created', function(source)
+        _newCharSources[source] = true
+        return true
+    end, 5)
+
     -- on character spawn we build the plain table ox expects and call its setPlayerInventory
     -- ox then loads the DB inventory, creates the inv object, and calls our server.setPlayerData
     Middleware:Add('Characters:Spawning', function(source)
@@ -683,14 +689,25 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
             groups[v.Id] = v.Grade and v.Grade.Level or 0
         end
 
+        local charFirst = char:GetData('First') or ''
+        local charLast = char:GetData('Last') or ''
+        local charName = (charFirst .. ' ' .. charLast):gsub('^%s+', ''):gsub('%s+$', '')
+        if charName == '' then charName = player:GetData('Name') end
         server.setPlayerInventory({
             source      = source,
-            name        = player:GetData('Name'),
+            name        = charName,
             identifier  = char:GetData('SID'),
             groups      = groups,
             sex         = char:GetData('Gender') or 0,
             dateofbirth = char:GetData('DOB') or '',
         })
+        if _newCharSources[source] then
+            _newCharSources[source] = nil
+            local startItems = Config:GetData('StartItems') or {}
+            for slot, item in ipairs(startItems) do
+                exports['ox_inventory']:AddItem(source, item.name, item.count, {}, slot)
+            end
+        end
         TriggerClientEvent('Inventory:Client:PolySetup', source, _polyInvs)
     end, 5)
 
@@ -701,15 +718,6 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
         if inv and inv.player then
             inv:closeInventory()
             Inventory.Remove(inv)
-        end
-        return true
-    end, 5)
-
-    -- give new characters their starter items
-    Middleware:Add('Characters:Created', function(source)
-        local startItems = Config:GetData('StartItems') or {}
-        for slot, item in ipairs(startItems) do
-            exports['ox_inventory']:AddItem(source, item.name, item.count, {}, slot)
         end
         return true
     end, 5)
