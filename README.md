@@ -1,6 +1,6 @@
 <div align="center">
 
-![Banner](https://r2.fivemanage.com/BkKrN1m7N9VFzzQ3Ht2i7/Banner.PNG)
+![Banner](https://r2.fivemanage.com/b8BG4vav9CjKMUdz6iKnY/Logos/mythic_banner_old.png)
 
 #  ox_inventory + mythic
 
