@@ -6,7 +6,8 @@ import ReactMarkdown from 'react-markdown';
 import { useAppSelector } from '../../store';
 import ClockIcon from '../utils/icons/ClockIcon';
 import { getItemUrl } from '../../helpers';
-import Divider from '../utils/Divider';
+import { Paper, Text, Divider } from '@mantine/core';
+import { tokens } from '../../theme';
 
 const SlotTooltip: React.ForwardRefRenderFunction<
   HTMLDivElement,
@@ -24,26 +25,52 @@ const SlotTooltip: React.ForwardRefRenderFunction<
   return (
     <>
       {!itemData ? (
-        <div className="tooltip-wrapper" ref={ref} style={style}>
-          <div className="tooltip-header-wrapper">
-            <p>{item.name}</p>
-          </div>
-          <Divider />
-        </div>
+        <Paper
+          ref={ref}
+          style={{
+            ...style,
+            pointerEvents: 'none',
+            border: `1px solid ${tokens.borderTeal}`,
+            minWidth: 200,
+            width: 200,
+            zIndex: 9999,
+          }}
+          p="xs"
+        >
+          <Text ff="'Orbitron', sans-serif" size="sm" c="white">{item.name}</Text>
+          <Divider color={tokens.borderTeal} my={6} />
+        </Paper>
       ) : (
-        <div style={{ ...style }} className="tooltip-wrapper" ref={ref}>
+        <Paper
+          ref={ref}
+          style={{
+            ...style,
+            pointerEvents: 'none',
+            border: `1px solid ${tokens.borderTeal}`,
+            minWidth: 200,
+            width: 200,
+            zIndex: 9999,
+          }}
+          p="xs"
+        >
           <div className="tooltip-header-wrapper">
-            <p>{item.metadata?.label || itemData.label || item.name}</p>
+            <Text ff="'Orbitron', sans-serif" size="sm" c="white" fw={500}>
+              {item.metadata?.label || itemData.label || item.name}
+            </Text>
             {inventoryType === 'crafting' ? (
               <div className="tooltip-crafting-duration">
                 <ClockIcon />
-                <p>{(item.duration !== undefined ? item.duration : 3000) / 1000}s</p>
+                <Text size="xs" c={tokens.textSecondary} ff="'Rajdhani', sans-serif">
+                  {(item.duration !== undefined ? item.duration : 3000) / 1000}s
+                </Text>
               </div>
             ) : (
-              <p>{item.metadata?.type}</p>
+              <Text size="xs" c={tokens.textMuted} ff="'Rajdhani', sans-serif">
+                {item.metadata?.type}
+              </Text>
             )}
           </div>
-          <Divider />
+          <Divider color={tokens.borderTeal} my={6} />
           {description && (
             <div className="tooltip-description">
               <ReactMarkdown className="tooltip-markdown">{description}</ReactMarkdown>
@@ -52,44 +79,44 @@ const SlotTooltip: React.ForwardRefRenderFunction<
           {inventoryType !== 'crafting' ? (
             <>
               {item.durability !== undefined && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ui_durability}: {Math.trunc(item.durability)}
-                </p>
+                </Text>
               )}
               {item.metadata?.ammo !== undefined && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ui_ammo}: {item.metadata.ammo}
-                </p>
+                </Text>
               )}
               {ammoName && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ammo_type}: {ammoName}
-                </p>
+                </Text>
               )}
               {item.metadata?.serial && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ui_serial}: {item.metadata.serial}
-                </p>
+                </Text>
               )}
               {item.metadata?.components && item.metadata?.components[0] && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ui_components}:{' '}
                   {(item.metadata?.components).map((component: string, index: number, array: []) =>
                     index + 1 === array.length ? Items[component]?.label : Items[component]?.label + ', '
                   )}
-                </p>
+                </Text>
               )}
               {item.metadata?.weapontint && (
-                <p>
+                <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                   {Locale.ui_tint}: {item.metadata.weapontint}
-                </p>
+                </Text>
               )}
               {additionalMetadata.map((data: { metadata: string; value: string }, index: number) => (
                 <Fragment key={`metadata-${index}`}>
                   {item.metadata && item.metadata[data.metadata] && (
-                    <p>
+                    <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                       {data.value}: {item.metadata[data.metadata]}
-                    </p>
+                    </Text>
                   )}
                 </Fragment>
               ))}
@@ -104,30 +131,34 @@ const SlotTooltip: React.ForwardRefRenderFunction<
                   )
                   .map(([key, val]) => {
                     const label = key.replace(/([A-Z][a-z]+|[A-Z]+(?=[A-Z]|$))/g, ' $1').trim();
-                    return <p key={`dyn-${key}`}>{label}: {String(val)}</p>;
+                    return (
+                      <Text key={`dyn-${key}`} size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
+                        {label}: {String(val)}
+                      </Text>
+                    );
                   })}
             </>
           ) : (
             <div className="tooltip-ingredients">
               {ingredients &&
                 ingredients.map((ingredient) => {
-                  const [item, count] = [ingredient[0], ingredient[1]];
+                  const [ingredientItem, count] = [ingredient[0], ingredient[1]];
                   return (
-                    <div className="tooltip-ingredient" key={`ingredient-${item}`}>
-                      <img src={item ? getItemUrl(item) : 'none'} alt="item-image" />
-                      <p>
+                    <div className="tooltip-ingredient" key={`ingredient-${ingredientItem}`}>
+                      <img src={ingredientItem ? getItemUrl(ingredientItem) : 'none'} alt="item-image" />
+                      <Text size="xs" ff="'Rajdhani', sans-serif" c={tokens.textSecondary}>
                         {count >= 1
-                          ? `${count}x ${Items[item]?.label || item}`
+                          ? `${count}x ${Items[ingredientItem]?.label || ingredientItem}`
                           : count === 0
-                          ? `${Items[item]?.label || item}`
-                          : count < 1 && `${count * 100}% ${Items[item]?.label || item}`}
-                      </p>
+                          ? `${Items[ingredientItem]?.label || ingredientItem}`
+                          : `${count * 100}% ${Items[ingredientItem]?.label || ingredientItem}`}
+                      </Text>
                     </div>
                   );
                 })}
             </div>
           )}
-        </div>
+        </Paper>
       )}
     </>
   );

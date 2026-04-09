@@ -11,6 +11,8 @@ import DragPreview from './components/utils/DragPreview';
 import { fetchNui } from './utils/fetchNui';
 import { useDragDropManager } from 'react-dnd';
 import KeyPress from './components/utils/KeyPress';
+import { isEnvBrowser } from './utils/misc';
+import DevMenu from './components/dev/DevMenu';
 
 debugData([
   {
@@ -60,28 +62,13 @@ debugData([
         ],
       },
       rightInventory: {
-        id: 'shop',
-        type: 'crafting',
-        slots: 5000,
-        label: 'Bob Smith',
-        weight: 3000,
-        maxWeight: 5000,
-        items: [
-          {
-            slot: 1,
-            name: 'lockpick',
-            weight: 500,
-            price: 300,
-            ingredients: {
-              iron: 5,
-              copper: 12,
-              powersaw: 0.1,
-            },
-            metadata: {
-              description: 'Simple lockpick that breaks easily and can pick basic door locks',
-            },
-          },
-        ],
+        id: 'stash-1',
+        type: 'stash',
+        slots: 50,
+        label: 'Stash',
+        weight: 0,
+        maxWeight: 10000,
+        items: [],
       },
     },
   },
@@ -115,6 +102,7 @@ const App: React.FC = () => {
       <InventoryComponent />
       <DragPreview />
       <KeyPress />
+      {isEnvBrowser() && <DevMenu />}
     </div>
   );
 };

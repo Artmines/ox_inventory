@@ -2,7 +2,6 @@ import React, { useCallback, useRef } from 'react';
 import { DragSource, Inventory, InventoryType, Slot, SlotWithItem } from '../../typings';
 import { useDrag, useDragDropManager, useDrop } from 'react-dnd';
 import { useAppDispatch } from '../../store';
-import WeightBar from '../utils/WeightBar';
 import { onDrop } from '../../dnd/onDrop';
 import { onBuy } from '../../dnd/onBuy';
 import { Items } from '../../store/items';
@@ -15,6 +14,8 @@ import { ItemsPayload } from '../../reducers/refreshSlots';
 import { closeTooltip, openTooltip } from '../../store/tooltip';
 import { openContextMenu } from '../../store/contextMenu';
 import { useMergeRefs } from '@floating-ui/react';
+import { Badge, Progress } from '@mantine/core';
+import { tokens } from '../../theme';
 
 interface SlotProps {
   inventoryId: Inventory['id'];
@@ -119,6 +120,9 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
 
   const refs = useMergeRefs([connectRef, ref]);
 
+  const canInteract =
+    canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) && canCraftItem(item, inventoryType);
+
   return (
     <div
       ref={refs}
@@ -126,18 +130,27 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
       onClick={handleClick}
       className="inventory-slot"
       style={{
-        filter:
-          !canPurchaseItem(item, { type: inventoryType, groups: inventoryGroups }) || !canCraftItem(item, inventoryType)
-            ? 'brightness(80%) grayscale(100%)'
-            : undefined,
         opacity: isDragging ? 0.4 : 1.0,
-        backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'}`,
-        border: isOver ? '1px dashed rgba(255,255,255,0.4)' : '',
+        border: isOver ? `1px dashed ${tokens.borderTealHover}` : undefined,
       }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'})`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'center',
+          backgroundSize: '7vh',
+          imageRendering: '-webkit-optimize-contrast',
+          filter: !canInteract ? 'brightness(80%) grayscale(100%)' : undefined,
+        }}
+      />
       {isSlotWithItem(item) && (
         <div
           className="item-slot-wrapper"
+          style={{ position: 'relative', zIndex: 1 }}
           onMouseEnter={() => {
             timerRef.current = window.setTimeout(() => {
               dispatch(openTooltip({ item, inventoryType }));
@@ -169,12 +182,31 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
                       })}g `
                   : ''}
               </p>
-              <p>{item.count ? item.count.toLocaleString('en-us') + `x` : ''}</p>
+              {item.count ? (
+                <Badge
+                  size="xs"
+                  radius={2}
+                  ff="'Rajdhani', sans-serif"
+                  style={{
+                    background: 'rgba(32,134,146,0.25)',
+                    border: `1px solid ${tokens.borderTeal}`,
+                    color: '#fff',
+                    fontWeight: 600,
+                  }}
+                >
+                  {item.count.toLocaleString('en-us')}x
+                </Badge>
+              ) : null}
             </div>
           </div>
           <div>
             {inventoryType !== 'shop' && item?.durability !== undefined && (
-              <WeightBar percent={item.durability} durability />
+              <Progress
+                value={item.durability}
+                size={2}
+                color={item.durability < 50 ? 'red.6' : item.durability < 75 ? 'orange.5' : 'teal.5'}
+                styles={{ root: { backgroundColor: tokens.borderSubtle } }}
+              />
             )}
             {inventoryType === 'shop' && item?.price !== undefined && (
               <>

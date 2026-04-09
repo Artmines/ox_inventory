@@ -13,9 +13,10 @@ import { closeTooltip } from '../../store/tooltip';
 import InventoryContext from './InventoryContext';
 import { closeContextMenu } from '../../store/contextMenu';
 import Fade from '../utils/transitions/Fade';
+import { isEnvBrowser } from '../../utils/misc';
 
 const Inventory: React.FC = () => {
-  const [inventoryVisible, setInventoryVisible] = useState(false);
+  const [inventoryVisible, setInventoryVisible] = useState(isEnvBrowser());
   const dispatch = useAppDispatch();
 
   useNuiEvent<boolean>('setInventoryVisible', setInventoryVisible);

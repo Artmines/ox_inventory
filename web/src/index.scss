@@ -1,11 +1,22 @@
-$mainColor: #22232c;
-$textColor: #c1c2c5;
-$mainFont: Roboto;
+$mainColor: #121025;
+$bgLight: #1c1a30;
+$bgDark: #0a0914;
+$textColor:  rgba(255, 255, 255, 0.7);
+$textPrimary: #ffffff;
+$textMuted: rgba(255, 255, 255, 0.35);
 
-$secondaryColor: rgba(12, 12, 12, 0.4);
-$secondaryColorHighlight: #33343F;
-$secondaryColorLight: rgba(0, 0, 0, 0.5);
-$secondaryColorDark: rgba(12, 12, 12, 0.8);
+$tealPrimary: #208692;
+$borderTeal: rgba(32, 134, 146, 0.2);
+$borderTealHover: rgba(32, 134, 146, 0.5);
+$borderSubtle: rgba(255, 255, 255, 0.06);
+
+$slotBg:  rgba(255, 255, 255, 0.03);
+$secondaryColor:  rgba(255, 255, 255, 0.03);
+$secondaryColorHighlight: $borderTealHover;
+$secondaryColorLight:  rgba(255, 255, 255, 0.05);
+$secondaryColorDark: $bgDark;
+
+$mainFont: Rajdhani;
 
 $gridCols: 5;
 $gridRows: 5;
@@ -121,7 +132,6 @@ button:active {
   justify-content: center;
   align-items: center;
   height: 100%;
-
   gap: 20px;
 }
 
@@ -221,7 +231,7 @@ button:active {
 .divider {
   width: 100%;
   height: 1px;
-  background-color: rgba(255, 255, 255, 0.12);
+  background-color: $borderTeal;
 }
 
 .useful-controls-button {
@@ -262,6 +272,13 @@ button:active {
   flex-direction: column;
   gap: calc($gridGap * 2);
 }
+
+.crafting-ui-wrapper {
+  width: calc(#{$gridCols} * #{$gridSize} + (#{$gridCols} - 1) * #{$gridGap});
+  height: calc(#{$containerSize} + 60px);
+  display: flex;
+  flex-direction: column;
+}
 .inventory-grid-header-wrapper {
   display: flex;
   flex-direction: row;
@@ -282,28 +299,25 @@ button:active {
 
 // inventory slots
 .inventory-slot {
-  background-color: $secondaryColor;
-  background-repeat: no-repeat;
-  background-position: center;
-  border-radius: 2.5%;
-  image-rendering: -webkit-optimize-contrast;
+  background-color: $slotBg;
+  border-radius: 2px;
   position: relative;
-  background-size: 7vh;
   color: $textColor;
-  border-color: rgba(0, 0, 0, 0.2);
-  border-style: inset;
-  border-width: 1px;
+  border: 1px solid $borderSubtle;
+  transition: border-color 150ms ease;
+
+  &:hover {
+    border-color: $borderTealHover;
+  }
 }
 
 .inventory-slot-label-box {
-  background-color: $mainColor;
+  background-color:  rgba(18, 16, 37, 0.85);
   color: $textColor;
   text-align: center;
-  border-bottom-left-radius: 0.25vh;
-  border-bottom-right-radius: 0.25vh;
-  border-top-color: rgba(0, 0, 0, 0.2);
-  border-top-style: inset;
-  border-top-width: 1px;
+  border-bottom-left-radius: 2px;
+  border-bottom-right-radius: 2px;
+  border-top: 1px solid $borderTeal;
 }
 
 .inventory-slot-label-text {
@@ -312,20 +326,22 @@ button:active {
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 2px 3px;
-  font-weight: 400;
-  font-family: $mainFont;
-  font-size: 12px;
+  font-weight: 700;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
 }
 
 .inventory-slot-number {
-  background-color: white;
-  color: black;
-  height: 12px;
-  border-top-left-radius: 0.25vh;
-  border-bottom-right-radius: 0.25vh;
-  padding: 3px;
-  font-size: 12px;
-  font-family: $mainFont;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(32, 134, 146, 0.3);
+  font-size: 4.5vh;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
 }
 
 .item-slot-wrapper {
@@ -342,17 +358,19 @@ button:active {
   display: flex;
   flex-direction: row;
   justify-content: flex-end;
+  width: 100%;
 }
 
 .item-hotslot-header-wrapper {
   @extend .item-slot-header-wrapper;
-  justify-content: space-between !important;
 }
 
 .item-slot-info-wrapper {
   display: flex;
   flex-direction: row;
-  align-self: flex-end;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
   padding: 3px;
   gap: 3px;
   p {
@@ -484,16 +502,18 @@ button:active {
 .item-notification-action-box {
   width: 100%;
   color: $textColor;
-  background-color: $secondaryColor;
+  background-color: $mainColor;
   text-transform: uppercase;
   text-align: center;
-  border-top-left-radius: 0.25vh;
-  border-top-right-radius: 0.25vh;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 2px;
+  border-top: 1px solid $borderTeal;
   font-family: $mainFont;
   p {
     font-size: 11px;
     padding: 2px;
     font-weight: 600;
+    color: var(--mantine-color-teal-4);
   }
 }
 
