@@ -138,7 +138,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
         style={{
           position: 'absolute',
           inset: 0,
-          zIndex: 0,
+          zIndex: 1,
           backgroundImage: `url(${item?.name ? getItemUrl(item as SlotWithItem) : 'none'})`,
           backgroundRepeat: 'no-repeat',
           backgroundPosition: 'center',
@@ -147,10 +147,13 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
           filter: !canInteract ? 'brightness(80%) grayscale(100%)' : undefined,
         }}
       />
+      {inventoryType === 'player' && item.slot <= 5 && (
+        <div className="inventory-slot-number">{item.slot}</div>
+      )}
       {isSlotWithItem(item) && (
         <div
           className="item-slot-wrapper"
-          style={{ position: 'relative', zIndex: 1 }}
+          style={{ position: 'relative', zIndex: 2 }}
           onMouseEnter={() => {
             timerRef.current = window.setTimeout(() => {
               dispatch(openTooltip({ item, inventoryType }));
@@ -169,7 +172,6 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
               inventoryType === 'player' && item.slot <= 5 ? 'item-hotslot-header-wrapper' : 'item-slot-header-wrapper'
             }
           >
-            {inventoryType === 'player' && item.slot <= 5 && <div className="inventory-slot-number">{item.slot}</div>}
             <div className="item-slot-info-wrapper">
               <p>
                 {item.weight > 0
@@ -188,7 +190,7 @@ const InventorySlot: React.ForwardRefRenderFunction<HTMLDivElement, SlotProps> =
                   radius={2}
                   ff="'Rajdhani', sans-serif"
                   style={{
-                    background: 'rgba(32,134,146,0.25)',
+                    background: tokens.tealFaint,
                     border: `1px solid ${tokens.borderTeal}`,
                     color: '#fff',
                     fontWeight: 600,

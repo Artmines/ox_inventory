@@ -16,7 +16,7 @@ const CraftingUI: React.FC<{ inventory: Inventory }> = ({ inventory }) => {
   const isBusy = useAppSelector((state) => state.inventory.isBusy);
   const dispatch = useAppDispatch();
 
-  const recipes = inventory.items.filter(isSlotWithItem) as SlotWithItem[];
+  const recipes = inventory.items.filter((s) => isSlotWithItem(s)) as SlotWithItem[];
 
   const filtered = recipes.filter((item) => {
     const label = Items[item.name]?.label || item.name;
@@ -95,9 +95,9 @@ const CraftingUI: React.FC<{ inventory: Inventory }> = ({ inventory }) => {
                       border: isSelected
                         ? `1px solid ${tokens.borderTealHover}`
                         : isLocked
-                        ? `1px solid rgba(255,100,100,0.2)`
+                        ? `1px solid ${tokens.errorFaint}`
                         : `1px solid ${tokens.borderSubtle}`,
-                      background: isSelected ? 'rgba(32,134,146,0.12)' : 'rgba(255,255,255,0.02)',
+                      background: isSelected ? tokens.selectedBg : 'rgba(255,255,255,0.02)',
                       transition: 'all 150ms ease',
                     }}
                   >
@@ -109,7 +109,7 @@ const CraftingUI: React.FC<{ inventory: Inventory }> = ({ inventory }) => {
                       />
                       {isLocked && (
                         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 448 512" fill="rgba(255,100,100,0.9)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 448 512" fill={tokens.errorText}>
                             <path d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
                           </svg>
                         </div>

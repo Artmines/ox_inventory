@@ -32,7 +32,7 @@ const InventoryGrid: React.FC<{ inventory: Inventory }> = ({ inventory }) => {
             {inventory.label}
           </Text>
           {inventory.maxWeight ? (
-            <Text size="sm" c="rgba(255,255,255,0.5)" ff="'Rajdhani', sans-serif">
+            <Text size="sm" c={tokens.textMuted} ff="'Rajdhani', sans-serif">
               {weight / 1000}/{inventory.maxWeight / 1000}kg
             </Text>
           ) : null}
@@ -41,7 +41,7 @@ const InventoryGrid: React.FC<{ inventory: Inventory }> = ({ inventory }) => {
             value={inventory.maxWeight ? (weight / inventory.maxWeight) * 100 : 0}
             color="teal.5"
             size={3}
-            styles={{ root: { backgroundColor: 'rgba(255,255,255,0.06)' }}}
+            styles={{ root: { backgroundColor: tokens.borderSubtle } }}
           />
         <div className="inventory-grid-container" ref={containerRef}>
           {inventory.items.slice(0, (page + 1) * PAGE_SIZE).map((item, index) => (

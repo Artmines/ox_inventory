@@ -1,14 +1,24 @@
 import { createTheme, MantineColorsTuple } from '@mantine/core';
 
 export const tokens = {
-    bgMain:           '#121025',
-    bgLight:          '#1c1a30',
-    bgDark:           '#0a0914',
+    // Backgrounds
+    bgMain:        '#121025',
+    bgLight:       '#1c1a30',
+    bgDark:        '#0a0914',
+    // Teal borders
     borderTeal:       'rgba(32,134,146,0.2)',
     borderTealHover:  'rgba(32,134,146,0.5)',
     borderSubtle:     'rgba(255,255,255,0.06)',
-    textSecondary:    'rgba(255,255,255,0.7)',
-    textMuted:        'rgba(255,255,255,0.35)',
+    // Teal fills
+    tealFaint:     'rgba(32,134,146,0.25)',
+    selectedBg:    'rgba(32,134,146,0.12)',
+    // Text
+    textPrimary:   '#ffffff',
+    textSecondary: 'rgba(255,255,255,0.7)',
+    textMuted:     'rgba(255,255,255,0.35)',
+    // Error / locked
+    errorFaint:    'rgba(255,100,100,0.2)',
+    errorText:     'rgba(255,100,100,0.9)',
   } as const;
 
 const teal: MantineColorsTuple = [
