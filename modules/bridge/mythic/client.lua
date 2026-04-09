@@ -55,9 +55,36 @@ local _spawnedBenchEntities = {}
 local _pendingBenches       = nil
 local _PedInteraction       = nil
 local _Targeting            = nil
+local _vendingSetup = false
+
+local function setupVendingMachines()
+    if _vendingSetup or not _Targeting then return end
+    _vendingSetup = true
+    local shops = lib.load('data.shops') or {}
+    for key, shop in pairs(shops) do
+        if shop.models and shop.icon and shop.text then
+            local shopType = key:match('^shop:(.+)$')
+            if shopType then
+                for _, model in ipairs(shop.models) do
+                    _Targeting:AddObject(model, shop.icon, {
+                        {
+                            text    = shop.text,
+                            icon    = shop.icon,
+                            event   = 'Shop:Client:OpenShop',
+                            data    = shopType,
+                            minDist = 3.0,
+                        },
+                    }, 3.0)
+                end
+            end
+        end
+    end
+end
 
 local function setupAllBenches()
     if not _pendingBenches or not _PedInteraction or not _Targeting then return end
+
+    setupVendingMachines()
 
     for _, bench in ipairs(_pendingBenches) do
         -- register in client CraftingBenches so openInventory can find the bench data
@@ -128,8 +155,18 @@ local function setupAllBenches()
     _Targeting.Zones:Refresh()
 end
 
+-- cache schematic bench oxData so we can build per-player locked states
+local _schematicBenchOxData = nil
+
 RegisterNetEvent('ox_inventory:bridge:SetupCraftingBenches', function(benches)
     _pendingBenches = benches
+    -- capture schematic bench data for per-player unlock injection
+    for _, bench in ipairs(benches) do
+        if bench.id == 'crafting-schematics' and bench.oxData then
+            _schematicBenchOxData = bench.oxData
+            break
+        end
+    end
     CreateThread(function()
         Wait(2000)
         _PedInteraction = exports['mythic-base']:FetchComponent('PedInteraction')
@@ -139,6 +176,20 @@ RegisterNetEvent('ox_inventory:bridge:SetupCraftingBenches', function(benches)
 end)
 
 AddEventHandler('Crafting:Client:OpenCrafting', function(ent, data)
+    if data.id == 'crafting-schematics' and _schematicBenchOxData then
+        -- apply per-player unlock states before opening
+        local unlocked = LocalPlayer.state.unlockedSchematics or {}
+        local modifiedItems = {}
+        for i, item in ipairs(_schematicBenchOxData.items or {}) do
+            local newItem = table.clone(item)
+            newItem.metadata = table.clone(item.metadata or {})
+            newItem.metadata.locked = not unlocked[newItem.metadata.schematic]
+            modifiedItems[i] = newItem
+        end
+        local modifiedData = table.clone(_schematicBenchOxData)
+        modifiedData.items = modifiedItems
+        exports['ox_inventory']:RegisterCraftingBench('crafting-schematics', modifiedData)
+    end
     exports['ox_inventory']:openInventory('crafting', { id = data.id, index = 1 })
 end)
 
@@ -526,7 +577,13 @@ RegisterNetEvent('ox_inventory:bridge:receiveShops', function(shops)
 end)
 
 AddEventHandler('Shop:Client:OpenShop', function(obj, data)
-    exports['ox_inventory']:openInventory('shop', { type = data.shopType, id = data.locId })
+    if type(data) == 'string' then
+        -- vending machines / direct shop type strings (e.g. "vending-coffee")
+        exports['ox_inventory']:openInventory('shop', { type = 'shop:' .. data })
+    else
+        -- NPC shops with shopType + locId table
+        exports['ox_inventory']:openInventory('shop', { type = data.shopType, id = data.locId })
+    end
 end)
 
 _inInvPoly = nil

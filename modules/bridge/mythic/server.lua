@@ -943,6 +943,15 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
                 exports['ox_inventory']:AddItem(source, item.name, item.count, buildStartMeta(item.name), slot)
             end
         end
+
+        local SID = char:GetData('SID')
+        local schematicRows = MySQL.query.await('SELECT schematic FROM player_schematics WHERE citizenid = ?', { SID })
+        local unlockedSchematics = {}
+        for _, row in ipairs(schematicRows or {}) do
+            unlockedSchematics[row.schematic] = true
+        end
+        Player(source).state:set('unlockedSchematics', unlockedSchematics, true)
+
         TriggerClientEvent('Inventory:Client:PolySetup', source, _polyInvs)
         TriggerClientEvent('ox_inventory:bridge:SetupCraftingBenches', source, _benchTargets)
     end, 5)
@@ -960,6 +969,65 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
 
     exports['mythic-base']:RegisterComponent('Inventory', Inventory)
     exports['mythic-base']:RegisterComponent('Crafting', CraftingReal)
+end)
+
+-- ensure player_schematics table exists
+MySQL.query([[
+    CREATE TABLE IF NOT EXISTS `player_schematics` (
+        `citizenid` varchar(50) NOT NULL,
+        `schematic`  varchar(100) NOT NULL,
+        `bench`      varchar(100) NOT NULL DEFAULT 'crafting-schematics',
+        PRIMARY KEY (`citizenid`, `schematic`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+]])
+
+-- register item use handlers for all schematic items
+CreateThread(function()
+    while not exports['mythic-base']:FetchComponent('Fetch') do Wait(100) end
+    local Fetch2    = exports['mythic-base']:FetchComponent('Fetch')
+    local InvServer = require 'modules.inventory.server'
+    local schematics = lib.load('data.mythic-crafting.schematic_config') or {}
+
+    for schematicKey, _ in pairs(schematics) do
+        local key      = schematicKey
+        local itemName = 'schematic_' .. key
+        InvServer.Items:RegisterUse(itemName, 'UnlockSchematic', function(source, slotData)
+            local player = Fetch2:Source(source)
+            if not player then return end
+            local char = player:GetData('Character')
+            if not char then return end
+            local SID = char:GetData('SID')
+
+            local current = Player(source).state.unlockedSchematics or {}
+            if current[key] then
+                TriggerClientEvent('ox_lib:notify', source, {
+                    title       = 'Schematic',
+                    description = 'You already know this recipe!',
+                    type        = 'warning',
+                })
+                return
+            end
+
+            exports['ox_inventory']:RemoveItem(source, itemName, 1, nil, slotData.Slot)
+
+            MySQL.insert('INSERT IGNORE INTO player_schematics (citizenid, schematic, bench) VALUES (?, ?, ?)', {
+                SID, key, 'crafting-schematics'
+            })
+
+            local updated = {}
+            for k, v in pairs(current) do updated[k] = v end
+            updated[key] = true
+            Player(source).state:set('unlockedSchematics', updated, true)
+
+            TriggerClientEvent('ox_lib:notify', source, {
+                title       = 'Schematic Unlocked!',
+                description = ('Recipe unlocked at the crafting bench.'),
+                type        = 'success',
+            })
+        end)
+    end
+    local count = 0; for _ in pairs(schematics) do count = count + 1 end
+    print(('^2[mythic-ox-bridge] Registered %s schematic item use handlers^0'):format(count))
 end)
 
 -- load mythic items from within this execution chain

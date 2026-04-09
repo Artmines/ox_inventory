@@ -34,6 +34,7 @@ CreateThread(function()
             local recipe = table.clone(data)
             recipe.metadata = recipe.metadata or {}
             recipe.metadata.schematic = schematicItem
+            recipe.metadata.locked = true -- locked by default; unlocked per-player via item use
             schematicRecipes[#schematicRecipes+1] = recipe
         end
 
