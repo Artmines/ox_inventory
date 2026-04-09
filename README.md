@@ -59,7 +59,7 @@ The bridge lives in `modules/bridge/mythic/` and is loaded automatically when `i
 | `FetchComponent('Crafting')` — RegisterBench, full bench pipeline | ✅ |
 | Crafting bench ped/model/zone spawning (client) | ✅ |
 | Crafting bench open (targeting → ox crafting UI) | ✅ |
-| Crafting UI — mythic-style panel | ⏳ Planned |
+| Crafting UI — mythic-style panel | ✅ |
 | Schematics — per-player unlock + DB storage | ⏳ Planned |
 | Item use — emotes + progress bar via mythic Progress component | ✅ |
 | Notifications via mythic-notify | ⏳ Planned |
