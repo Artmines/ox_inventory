@@ -28,6 +28,7 @@ server_scripts {
     'init.lua',
     'modules/bridge/mythic/migration.lua',
     'modules/bridge/mythic/commands.lua',
+    'modules/bridge/mythic/crafting_server.lua',
 }
 
 client_scripts {
@@ -53,4 +54,5 @@ files {
     'data/mythic-items/index.lua',
     'data/mythic-items/*.lua',
     'data/mythic-items/**/*.lua',
+    'data/mythic-crafting/*.lua'
 }

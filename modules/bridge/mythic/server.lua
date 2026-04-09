@@ -746,13 +746,102 @@ exports['mythic-base']:RegisterComponent('Loot', _Loot)
 -- stub crafting component so resources dont explode on FetchComponent('Crafting')
 -- everything returns false/nil, nothing will actually craft
 -- FIXIT: replace this with real logic when you get around to it
-local CraftingStub = {
-    RegisterBench = function(self, id, config)
-        print('^3[mythic-ox-bridge] Crafting:RegisterBench called for bench "' .. tostring(id) .. '" - crafting not bridged yet, ignoring^0')
-    end,
-    CanCraft = function(self, ...) return false end,
-    StartCraft = function(self, ...) return false end,
-}
+local function mythicRecipesToOx(recipes)
+    local items = {}
+    for k, v in pairs(recipes) do
+        local ingredients = {}
+        for _, ing in ipairs(v.items or {}) do
+            ingredients[ing.name:lower()] = ing.count
+        end
+
+        items[#items + 1] = {
+            name = v.result.name:lower(),
+            count = v.result.count or 1,
+            duration = v.time or 5000,
+            ingredients = ingredients,
+            metadata = v.metadata or {},
+            slot = #items + 1,
+        }
+    end
+    return items
+end
+
+local function mythicTargetToOx(targeting, location)
+    if not targeting then return nil, nil end
+    if targeting.poly then
+        return nil, {
+            name = targeting.poly.name or ('crafting_%s'):format(tostring(location)),
+            coords = targeting.poly.coords,
+            w = targeting.poly.w or 2.0,
+            l = targeting.poly.l or 2.0,
+        }
+    end
+
+    if targeting.model or targeting.ped then
+        return nil, nil -- handled via mythic-targeting no ox zone needed
+    end
+
+    if not location then return nil, nil end
+
+    local x, y, z
+
+    if type(location) == 'vector3' or type(location) == 'vector4' then
+        x, y, z = location.x, location.y, location.z
+    elseif type(location) == 'table' and location.x and location.y and location.z then
+        x, y, z = location.x, location.y, location.z
+    else
+        return nil, nil
+    end
+
+    return { vector3(x, y, z) }, nil
+end
+
+local function mythicRestrictionsToOx(restrictions)
+    if not restrictions then return nil end
+    if restrictions.shared then return nil end --group restrictions
+    if restrictions.job then
+        return { [restrictions.job.id] = restrictions.job.grade or 0 }
+    end
+    return nil
+end
+
+local _benchTargets = {}
+
+local CraftingReal = {}
+
+  CraftingReal.RegisterBench = function(self, id, label, targeting, location, restrictions, recipes, canUseSchematics)
+      local items  = mythicRecipesToOx(recipes or {})
+      local groups = mythicRestrictionsToOx(restrictions)
+      local points, zones = mythicTargetToOx(targeting, location)
+
+      local data = {
+          label            = label,
+          items            = items,
+          groups           = groups,
+          points           = points,
+          zones            = zones,
+          canUseSchematics = canUseSchematics or false,
+      }
+
+      exports['ox_inventory']:RegisterCraftingBench(id, data)
+
+      -- store for sending to clients on spawn
+      _benchTargets[#_benchTargets + 1] = {
+          id        = id,
+          label     = label,
+          targeting = targeting,
+          location  = location,
+          oxData    = data,
+      }
+
+      print(('^2[mythic-ox-bridge] Registered crafting bench: %s^0'):format(tostring(id)))
+  end
+
+CraftingReal.AddRecipieToBench = function(self, bench, id, recipe) end -- future use??
+CraftingReal.CanCraft = function(self, ...) return false end
+CraftingReal.StartCraft = function (self, ...) return false end
+CraftingReal.Craft = { Start = function() end, End = function() end, Cancel = function () end }
+CraftingReal.Schematics = { Has = function () return false end, Add = function() end }
 
 -- mythic lifecycle hooks
 AddEventHandler('Proxy:Shared:RegisterReady', function()
@@ -808,6 +897,7 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
             end
         end
         TriggerClientEvent('Inventory:Client:PolySetup', source, _polyInvs)
+        TriggerClientEvent('ox_inventory:bridge:SetupCraftingBenches', source, _benchTargets)
     end, 5)
 
     -- close and remove inventory on character logout
@@ -822,7 +912,7 @@ AddEventHandler('Proxy:Shared:RegisterReady', function()
     end, 5)
 
     exports['mythic-base']:RegisterComponent('Inventory', Inventory)
-    exports['mythic-base']:RegisterComponent('Crafting', CraftingStub)
+    exports['mythic-base']:RegisterComponent('Crafting', CraftingReal)
 end)
 
 -- load mythic items from within this execution chain

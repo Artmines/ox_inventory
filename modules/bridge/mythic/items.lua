@@ -99,7 +99,8 @@ local itemCount, callbackCount = 0, 0
 for _, item in ipairs(allItems) do
     local converted = ConvertItem(item)
     if converted then
-        ItemList[item.name] = converted
+        local storeKey = (item.name:sub(1, 7):lower() == 'weapon_') and item.name or item.name:lower()
+        ItemList[storeKey] = converted
         itemCount = itemCount + 1
     end
     if item.type == 1 and (item.statusChange or item.healthModifier or item.armourModifier or item.stressTicks or item.energyModifier) then
@@ -107,5 +108,9 @@ for _, item in ipairs(allItems) do
         callbackCount = callbackCount + 1
     end
 end
+
+AddEventHandler('Crafting:Client:OpenCrafting', function(ent, data)
+    exports['ox_inventory']:openInventory('crafting', { id = data.id, index = 1 })
+end)
 
 print(string.format('^2[mythic-ox-bridge] loaded %d items, %d consumable callbacks :)^0', itemCount, callbackCount))

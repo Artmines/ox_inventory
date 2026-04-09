@@ -51,6 +51,98 @@ local CraftingStub = {
     CanCraft      = function() return false end,
 }
 
+local _spawnedBenchEntities = {}
+local _pendingBenches       = nil
+local _PedInteraction       = nil
+local _Targeting            = nil
+
+local function setupAllBenches()
+    if not _pendingBenches or not _PedInteraction or not _Targeting then return end
+
+    for _, bench in ipairs(_pendingBenches) do
+        -- register in client CraftingBenches so openInventory can find the bench data
+        if bench.oxData then
+            exports['ox_inventory']:RegisterCraftingBench(bench.id, bench.oxData)
+        end
+
+        local id        = bench.id
+        local targeting = bench.targeting
+        local location  = bench.location
+
+        if not targeting or not location then goto continue end
+
+        local coords, heading
+        if type(location) == 'vector3' or type(location) == 'vector4' then
+            coords  = vector3(location.x, location.y, location.z)
+            heading = 0.0
+        elseif type(location) == 'table' and location.x and location.y and location.z then
+            coords  = vector3(location.x, location.y, location.z)
+            heading = location.h or 0.0
+        else
+            goto continue
+        end
+
+        local menu = {
+            {
+                icon  = targeting.icon or 'fa-hammer',
+                text  = bench.label or 'Craft',
+                event = 'Crafting:Client:OpenCrafting',
+                data  = { id = id },
+            },
+        }
+
+        if targeting.ped then
+            _PedInteraction:Add(
+                id,
+                GetHashKey(targeting.ped.model),
+                coords,
+                heading,
+                25.0,
+                menu,
+                targeting.icon or 'fa-hammer',
+                targeting.ped.task
+            )
+        elseif targeting.model then
+            local obj = CreateObject(GetHashKey(targeting.model), coords.x, coords.y, coords.z, false, true, false)
+            FreezeEntityPosition(obj, true)
+            SetEntityHeading(obj, heading)
+            _spawnedBenchEntities[id] = obj
+            _Targeting:AddEntity(obj, targeting.icon or 'fa-hammer', menu)
+        elseif targeting.poly then
+            _Targeting.Zones:AddBox(
+                id,
+                targeting.icon or 'fa-hammer',
+                targeting.poly.coords,
+                targeting.poly.w or 2.0,
+                targeting.poly.l or 2.0,
+                targeting.poly.options,
+                menu,
+                2.0,
+                true
+            )
+        end
+
+        ::continue::
+    end
+
+    _Targeting.Zones:Refresh()
+end
+
+RegisterNetEvent('ox_inventory:bridge:SetupCraftingBenches', function(benches)
+    _pendingBenches = benches
+    CreateThread(function()
+        Wait(2000)
+        _PedInteraction = exports['mythic-base']:FetchComponent('PedInteraction')
+        _Targeting      = exports['mythic-base']:FetchComponent('Targeting')
+        setupAllBenches()
+    end)
+end)
+
+AddEventHandler('Crafting:Client:OpenCrafting', function(ent, data)
+    exports['ox_inventory']:openInventory('crafting', { id = data.id, index = 1 })
+end)
+
+
 -- Register stubs immediately at load time — other resources fetch these
 -- during their RegisterReady handlers which fire after ox_inventory loads
 exports['mythic-base']:RegisterComponent('Weapons', WeaponsStub)

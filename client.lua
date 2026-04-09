@@ -194,7 +194,7 @@ function client.openInventory(inv, data)
             return lib.notify({ id = 'cannot_perform', type = 'error', description = locale('cannot_perform') })
         end
 
-        left, right, accessError = lib.callback.await('ox_inventory:openCraftingBench', 200, data.id, data.index)
+        left, right, accessError = lib.callback.await('ox_inventory:openCraftingBench', false, data.id, data.index)
 
         if left then
             right = CraftingBenches[data.id]

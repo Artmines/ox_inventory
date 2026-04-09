@@ -258,3 +258,7 @@ lib.callback.register('ox_inventory:craftItem', function(source, id, index, reci
 		end
 	end
 end)
+
+exports('RegisterCraftingBench', function(id, data)
+	createCraftingBench(id, data)
+end)

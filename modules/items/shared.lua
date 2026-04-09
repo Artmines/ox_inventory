@@ -70,7 +70,8 @@ local function newItem(data)
 	end
 
     ::continue::
-	ItemList[data.name] = data
+    local storeKey = (data.name:sub(1, 7):lower() == 'weapon_') and data.name or data.name:lower()
+	ItemList[storeKey] = data
 end
 
 for type, data in pairs(lib.load('data.weapons') or {}) do
